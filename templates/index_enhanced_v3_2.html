@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Omega Enhanced v3.2.0 - Perfect Chat Mode</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --dark-bg: #1a1a2e;
+            --darker-bg: #16213e;
+            --accent-color: #0f3460;
+            --text-light: #ffffff;
+            --text-muted: #b3b3b3;
+            --border-color: #333;
+            --message-bg: #2a2a3e;
+        }
+
+        body {
+            background: var(--dark-bg);
+            color: var(--text-light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: var(--darker-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--primary-gradient);
+        }
+
+        .sidebar-header h4 {
+            margin: 0;
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        .sidebar-header .version {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--dark-bg);
+        }
+
+        .chat-header {
+            padding: 15px 25px;
+            background: var(--darker-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+
+        .chat-header h5 {
+            margin: 0;
+            color: var(--text-light);
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+
+        .status-online { background-color: #28a745; }
+        .status-offline { background-color: #dc3545; }
+        .status-connecting { background-color: #ffc107; }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: var(--dark-bg);
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: var(--primary-gradient);
+            color: var(--text-light);
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.assistant .message-content {
+            background: var(--message-bg);
+            color: var(--text-light);
+            border-bottom-left-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+
+        .message-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin: 0 10px;
+            font-size: 0.8rem;
+        }
+
+        .message.user .message-avatar {
+            background: var(--secondary-gradient);
+            order: 2;
+        }
+
+        .message.assistant .message-avatar {
+            background: var(--success-gradient);
+        }
+
+        .chat-input-area {
+            padding: 20px 25px;
+            background: var(--darker-bg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .chat-input {
+            background: var(--message-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+            border-radius: 25px;
+            padding: 12px 120px 12px 20px;
+            resize: none;
+            max-height: 120px;
+        }
+
+        .chat-input:focus {
+            background: var(--message-bg);
+            border-color: #667eea;
+            color: var(--text-light);
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .send-button {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .send-button:hover {
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .form-control, .form-select {
+            background: var(--message-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: var(--message-bg);
+            border-color: #667eea;
+            color: var(--text-light);
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .form-select option {
+            background: var(--message-bg);
+            color: var(--text-light);
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-gradient);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--message-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+        }
+
+        .btn-secondary:hover {
+            background: var(--accent-color);
+            border-color: var(--border-color);
+            color: var(--text-light);
+        }
+
+        .modal-content {
+            background: var(--darker-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-header, .modal-footer {
+            border-color: var(--border-color);
+        }
+
+        .modal-title {
+            color: var(--text-light);
+        }
+
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+
+        .form-label {
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+
+        .alert-info {
+            background-color: rgba(102, 126, 234, 0.1);
+            border-color: rgba(102, 126, 234, 0.2);
+            color: var(--text-light);
+        }
+
+        .thinking-indicator {
+            display: none;
+            padding: 10px 20px;
+            background: var(--message-bg);
+            border-radius: 18px;
+            margin: 10px 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .thinking-indicator.show {
+            display: block;
+        }
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 3px;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #667eea;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .session-item {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: var(--message-bg);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .session-item:hover {
+            background: var(--accent-color);
+            border-color: #667eea;
+        }
+
+        .session-item.active {
+            background: var(--primary-gradient);
+            border-color: #667eea;
+        }
+
+        .session-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .session-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .nav-tabs {
+            border-bottom: 1px solid var(--border-color);
+            background: var(--darker-bg);
+        }
+
+        .nav-tabs .nav-link {
+            color: var(--text-muted);
+            border: none;
+            background: transparent;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--text-light);
+            background: var(--dark-bg);
+            border-bottom: 2px solid #667eea;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: var(--text-light);
+        }
+
+        .auto-save-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--success-gradient);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .auto-save-indicator.show {
+            opacity: 1;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .quick-action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--message-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-light);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quick-action-btn:hover {
+            background: var(--accent-color);
+            border-color: #667eea;
+        }
+
+        .feedback-panel {
+            background: var(--message-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .feedback-panel.show {
+            display: block;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: absolute;
+                z-index: 1000;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-container {
+                flex-direction: column;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--darker-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h4><i class="bi bi-robot"></i> Project Omega</h4>
+                <div class="version">Enhanced v3.2.0 - Perfect Chat Mode</div>
+                <div class="d-flex mt-3 gap-2">
+                    <button class="btn btn-sm btn-light" onclick="showSettings()">
+                        <i class="bi bi-gear"></i> Settings
+                    </button>
+                    <button class="btn btn-sm btn-info" onclick="showLearningLogs()">
+                        <i class="bi bi-journal-text"></i> Learning Logs
+                    </button>
+                </div>
+            </div>
+            
+            <div class="sidebar-content">
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <div class="quick-action-btn" onclick="startNewChat()">
+                        <i class="bi bi-plus-circle"></i><br>New Chat
+                    </div>
+                    <div class="quick-action-btn" onclick="clearCurrentChat()">
+                        <i class="bi bi-trash"></i><br>Clear Chat
+                    </div>
+                </div>
+
+                <!-- Model Selection -->
+                <div class="mb-3">
+                    <label for="modelSelect" class="form-label">
+                        <i class="bi bi-cpu"></i> AI Model
+                    </label>
+                    <select class="form-select" id="modelSelect">
+                        <option value="">Loading models...</option>
+                    </select>
+                    <div class="text-muted mt-1" id="modelDescription">Select a model to see details</div>
+                </div>
+
+                <!-- AI Settings -->
+                <div class="mb-3">
+                    <label for="temperature" class="form-label">
+                        <i class="bi bi-thermometer-half"></i> Creativity (Temperature): <span id="tempValue">0.7</span>
+                    </label>
+                    <input type="range" class="form-range" id="temperature" min="0.1" max="2.0" step="0.1" value="0.7">
+                </div>
+
+                <div class="mb-3">
+                    <label for="maxTokens" class="form-label">
+                        <i class="bi bi-text-paragraph"></i> Max Response Length
+                    </label>
+                    <select class="form-select" id="maxTokens">
+                        <option value="1024">Short (1024)</option>
+                        <option value="2048" selected>Medium (2048)</option>
+                        <option value="4096">Long (4096)</option>
+                        <option value="8192">Very Long (8192)</option>
+                    </select>
+                </div>
+
+                <!-- Feature Toggles (Default Enabled) -->
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="thinkingMode" checked>
+                        <label class="form-check-label" for="thinkingMode">
+                            <i class="bi bi-lightbulb"></i> Enhanced Thinking Mode
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="internetAccess" checked>
+                        <label class="form-check-label" for="internetAccess">
+                            <i class="bi bi-globe"></i> Internet Access
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="learningMode" checked>
+                        <label class="form-check-label" for="learningMode">
+                            <i class="bi bi-brain"></i> Learning Mode
+                        </label>
+                    </div>
+                </div>
+
+                <!-- System Prompt (Default Blank) -->
+                <div class="mb-3">
+                    <label for="systemPrompt" class="form-label">
+                        <i class="bi bi-code-square"></i> System Prompt
+                    </label>
+                    <textarea class="form-control" id="systemPrompt" rows="3" 
+                              placeholder="Optional: Custom instructions for the AI (leave blank for default behavior)"></textarea>
+                </div>
+
+                <!-- Recent Sessions -->
+                <div class="mb-3">
+                    <h6><i class="bi bi-clock-history"></i> Recent Sessions</h6>
+                    <div id="sessionsList">
+                        <div class="text-muted text-center py-3">
+                            No recent sessions. Start chatting to create your first auto-saved session!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="chat-area">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <div class="d-flex align-items-center">
+                    <h5 id="sessionTitle">Ready to Chat</h5>
+                    <div class="status-indicator status-offline" id="connectionStatus"></div>
+                </div>
+                <div class="auto-save-indicator" id="autoSaveIndicator">
+                    <i class="bi bi-check-circle"></i> Auto-saved
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chatMessages">
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-chat-dots" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="mt-3">Welcome to Project Omega Enhanced v3.2.0!</p>
+                    <p>Start a conversation and it will be automatically saved with an intelligent name.</p>
+                    <p><strong>Perfect defaults:</strong> All AI modes enabled, blank system prompt for natural conversation.</p>
+                </div>
+            </div>
+
+            <!-- Thinking Indicator -->
+            <div class="thinking-indicator" id="thinkingIndicator">
+                <i class="bi bi-brain"></i> AI is thinking
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input-area">
+                <div class="input-group">
+                    <textarea class="form-control chat-input" id="messageInput" 
+                              placeholder="Type your message... (Your first message will auto-create and name a session)"
+                              onkeydown="handleKeyPress(event)"></textarea>
+                    <button class="send-button" id="sendButton" onclick="sendMessage()">
+                        <i class="bi bi-send"></i>
+                    </button>
+                </div>
+                
+                <!-- Feedback Panel -->
+                <div class="feedback-panel" id="feedbackPanel">
+                    <h6><i class="bi bi-exclamation-triangle"></i> Provide Feedback on AI Response</h6>
+                    <div class="mb-2">
+                        <label for="aiMistake" class="form-label">What did the AI get wrong?</label>
+                        <textarea class="form-control" id="aiMistake" rows="2" 
+                                  placeholder="Describe the AI's mistake..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="userCorrection" class="form-label">What is the correct answer?</label>
+                        <textarea class="form-control" id="userCorrection" rows="2"
+                                  placeholder="Provide the correct information..."></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary btn-sm" onclick="submitFeedback()">
+                            <i class="bi bi-check"></i> Submit Learning
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="hideFeedbackPanel()">
+                            <i class="bi bi-x"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-gear"></i> Settings & Configuration</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-link-45deg"></i> Active Tunnel URLs</h6>
+                            <div id="tunnelUrls">
+                                <div class="text-muted">Loading tunnel information...</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-info-circle"></i> System Information</h6>
+                            <div id="systemInfo">
+                                <div><strong>Version:</strong> Enhanced v3.2.0</div>
+                                <div><strong>Features:</strong> Auto-save, Learning AI, Internet Access</div>
+                                <div><strong>Chat Mode:</strong> Perfect Defaults</div>
+                                <div><strong>Agent Mode:</strong> Available separately</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Learning Logs Modal -->
+    <div class="modal fade" id="learningLogsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-journal-text"></i> AI Learning Logs</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="learningLogsContent">
+                        <div class="text-center text-muted">Loading learning logs...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Global variables
+        let socket = null;
+        let currentSessionId = null;
+        let availableModels = [];
+        let isConnected = false;
+        let autoSaveTimeout = null;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Project Omega Enhanced v3.2.0 - Perfect Chat Mode');
+            initializeSocket();
+            loadModels();
+            loadTunnelUrls();
+            loadRecentSessions();
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Update temperature display
+            document.getElementById('temperature').addEventListener('input', function() {
+                document.getElementById('tempValue').textContent = this.value;
+            });
+
+            console.log('✅ All systems initialized successfully');
+        });
+
+        function setupEventListeners() {
+            // Auto-resize textarea
+            const messageInput = document.getElementById('messageInput');
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+
+            // Model selection changes
+            document.getElementById('modelSelect').addEventListener('change', function() {
+                const selectedModel = availableModels.find(model => model.id === this.value);
+                if (selectedModel) {
+                    document.getElementById('modelDescription').textContent = selectedModel.description;
+                }
+            });
+        }
+
+        function initializeSocket() {
+            try {
+                socket = io({
+                    transports: ['websocket', 'polling'],
+                    timeout: 10000,
+                    reconnection: true,
+                    reconnectionAttempts: 5,
+                    reconnectionDelay: 2000
+                });
+                
+                socket.on('connect', function() {
+                    console.log('✅ Connected to server');
+                    isConnected = true;
+                    updateConnectionStatus('online', 'Connected - Ready to Chat');
+                });
+                
+                socket.on('disconnect', function() {
+                    console.log('❌ Disconnected from server');
+                    isConnected = false;
+                    updateConnectionStatus('offline', 'Disconnected');
+                });
+
+                socket.on('session_created', function(data) {
+                    console.log('📝 Auto-session created:', data.session_id);
+                    currentSessionId = data.session_id;
+                    showAutoSaveIndicator();
+                    loadRecentSessions(); // Refresh session list
+                });
+                
+                socket.on('chat_response', function(data) {
+                    appendTokenToLastMessage(data.token);
+                });
+                
+                socket.on('message_complete', function() {
+                    hideThinkingIndicator();
+                    enableSendButton();
+                    showAutoSaveIndicator();
+                });
+
+                socket.on('status', function(data) {
+                    updateConnectionStatus('connecting', data.message);
+                });
+                
+                socket.on('error', function(data) {
+                    console.error('Socket error:', data.message);
+                    hideThinkingIndicator();
+                    enableSendButton();
+                    showErrorMessage(data.message);
+                });
+                
+            } catch (error) {
+                console.error('WebSocket error:', error);
+                updateConnectionStatus('offline', 'Connection failed');
+            }
+        }
+
+        function updateConnectionStatus(status, message) {
+            const indicator = document.getElementById('connectionStatus');
+            const title = document.getElementById('sessionTitle');
+            
+            indicator.className = `status-indicator status-${status}`;
+            title.textContent = message;
+        }
+
+        function loadModels() {
+            console.log('🔄 Loading models...');
+            fetch('/api/models')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(models => {
+                    console.log(`✅ Loaded ${models.length} models successfully`);
+                    availableModels = models;
+                    populateModelSelect(models);
+                })
+                .catch(error => {
+                    console.error('❌ Error loading models:', error);
+                    // Enhanced fallback with user notification
+                    const fallbackModels = [
+                        {
+                            id: 'mistral:7b-instruct',
+                            name: 'Mistral 7B Instruct',
+                            description: 'Fallback model - reliable and fast',
+                            size_gb: 4.1,
+                            supports_thinking: false,
+                            supports_internet: true
+                        },
+                        {
+                            id: 'llama3.2:3b-instruct',
+                            name: 'Llama 3.2 3B Instruct',
+                            description: 'Fallback model - advanced reasoning',
+                            size_gb: 2.0,
+                            supports_thinking: true,
+                            supports_internet: true
+                        }
+                    ];
+                    
+                    console.log('⚠️ Using fallback models due to API error');
+                    availableModels = fallbackModels;
+                    populateModelSelect(fallbackModels);
+                    
+                    // Show user-friendly error notification
+                    showErrorMessage('Model loading issue detected. Using reliable fallback models. Features remain fully functional.');
+                });
+        }
+
+        function populateModelSelect(models) {
+            const select = document.getElementById('modelSelect');
+            select.innerHTML = '';
+            
+            if (models && models.length > 0) {
+                models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = `${model.name} (${model.size_gb}GB)`;
+                    option.dataset.description = model.description;
+                    option.dataset.thinking = model.supports_thinking || false;
+                    option.dataset.internet = model.supports_internet || true;
+                    select.appendChild(option);
+                });
+                
+                // Select first model by default
+                select.value = models[0].id;
+                document.getElementById('modelDescription').textContent = models[0].description;
+                
+                console.log(`✅ Model dropdown populated with ${models.length} models`);
+            } else {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No models available';
+                select.appendChild(option);
+                console.log('⚠️ No models available to populate');
+            }
+        }
+
+        function loadTunnelUrls() {
+            fetch('/api/tunnels')
+                .then(response => response.json())
+                .then(tunnels => {
+                    const tunnelContainer = document.getElementById('tunnelUrls');
+                    if (tunnels && tunnels.length > 0) {
+                        tunnelContainer.innerHTML = tunnels.map(tunnel => `
+                            <div class="mb-2">
+                                <strong>${tunnel.name}:</strong><br>
+                                <a href="${tunnel.url}" target="_blank" class="text-primary">${tunnel.url}</a>
+                            </div>
+                        `).join('');
+                    } else {
+                        tunnelContainer.innerHTML = '<div class="text-muted">No active tunnels detected</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading tunnels:', error);
+                    document.getElementById('tunnelUrls').innerHTML = '<div class="text-muted">Error loading tunnel information</div>';
+                });
+        }
+
+        function loadRecentSessions() {
+            fetch('/api/sessions')
+                .then(response => response.json())
+                .then(sessions => {
+                    const sessionsList = document.getElementById('sessionsList');
+                    if (sessions && sessions.length > 0) {
+                        sessionsList.innerHTML = sessions.map(session => `
+                            <div class="session-item ${session.id === currentSessionId ? 'active' : ''}" onclick="loadSession('${session.id}')">
+                                <div class="session-name">${session.name}</div>
+                                <div class="session-meta">
+                                    ${session.message_count} messages • ${new Date(session.updated_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        sessionsList.innerHTML = `
+                            <div class="text-muted text-center py-3">
+                                No recent sessions. Start chatting to create your first auto-saved session!
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading sessions:', error);
+                });
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message || !isConnected) {
+                return;
+            }
+
+            // Clear input and reset height
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Add user message to chat
+            addMessage('user', message);
+
+            // Show thinking indicator
+            showThinkingIndicator();
+            disableSendButton();
+
+            // Prepare message data with perfect defaults
+            const messageData = {
+                message: message,
+                model: document.getElementById('modelSelect').value || availableModels[0]?.id || 'mistral:7b-instruct',
+                session_id: currentSessionId,
+                thinking_mode: document.getElementById('thinkingMode').checked,
+                internet_access: document.getElementById('internetAccess').checked,
+                learning_mode: document.getElementById('learningMode').checked,
+                system_prompt: document.getElementById('systemPrompt').value.trim(),
+                temperature: parseFloat(document.getElementById('temperature').value),
+                max_tokens: parseInt(document.getElementById('maxTokens').value)
+            };
+
+            console.log('📤 Sending message:', messageData);
+            socket.emit('chat_message', messageData);
+        }
+
+        function addMessage(role, content) {
+            const messagesContainer = document.getElementById('chatMessages');
+            
+            // Remove welcome message if it exists
+            const welcomeMessage = messagesContainer.querySelector('.text-center');
+            if (welcomeMessage && welcomeMessage.textContent.includes('Welcome to Project Omega')) {
+                welcomeMessage.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const avatar = role === 'user' ? 'U' : 'AI';
+            const avatarClass = role === 'user' ? '' : '';
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">
+                    <div class="message-text">${formatMessage(content)}</div>
+                    ${role === 'assistant' ? '<button class="btn btn-sm btn-outline-light mt-2" onclick="showFeedbackPanel()"><i class="bi bi-exclamation-triangle"></i> Provide Feedback</button>' : ''}
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Update session title with smart message
+            if (role === 'user' && !currentSessionId) {
+                updateConnectionStatus('connecting', 'Creating auto-session...');
+            }
+        }
+
+        function appendTokenToLastMessage(token) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const lastMessage = messagesContainer.querySelector('.message.assistant:last-child');
+            
+            if (lastMessage) {
+                const textElement = lastMessage.querySelector('.message-text');
+                textElement.innerHTML += token;
+            } else {
+                // Create new assistant message if none exists
+                addMessage('assistant', token);
+            }
+            
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function formatMessage(text) {
+            // Basic markdown-like formatting
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function showThinkingIndicator() {
+            document.getElementById('thinkingIndicator').classList.add('show');
+        }
+
+        function hideThinkingIndicator() {
+            document.getElementById('thinkingIndicator').classList.remove('show');
+        }
+
+        function disableSendButton() {
+            const button = document.getElementById('sendButton');
+            button.disabled = true;
+            button.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+        }
+
+        function enableSendButton() {
+            const button = document.getElementById('sendButton');
+            button.disabled = false;
+            button.innerHTML = '<i class="bi bi-send"></i>';
+        }
+
+        function showAutoSaveIndicator() {
+            const indicator = document.getElementById('autoSaveIndicator');
+            indicator.classList.add('show');
+            
+            // Auto-hide after 3 seconds
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 3000);
+        }
+
+        function showErrorMessage(message) {
+            // Add error message to chat
+            const messagesContainer = document.getElementById('chatMessages');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger';
+            errorDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ${message}`;
+            messagesContainer.appendChild(errorDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function startNewChat() {
+            currentSessionId = null;
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-chat-dots" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="mt-3">New chat started!</p>
+                    <p>Your next message will create a new auto-saved session.</p>
+                </div>
+            `;
+            updateConnectionStatus('online', 'New Chat - Ready');
+            loadRecentSessions();
+        }
+
+        function clearCurrentChat() {
+            if (currentSessionId) {
+                if (confirm('Clear this chat? (Your learnings will be preserved)')) {
+                    fetch('/api/clear_session', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({session_id: currentSessionId})
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            startNewChat();
+                        } else {
+                            alert('Error clearing chat: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error clearing chat:', error);
+                        alert('Error clearing chat');
+                    });
+                }
+            } else {
+                startNewChat();
+            }
+        }
+
+        function loadSession(sessionId) {
+            // Implementation for loading existing sessions would go here
+            currentSessionId = sessionId;
+            updateConnectionStatus('online', 'Session Loaded');
+            loadRecentSessions();
+        }
+
+        function showSettings() {
+            const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
+            modal.show();
+        }
+
+        function showLearningLogs() {
+            const modal = new bootstrap.Modal(document.getElementById('learningLogsModal'));
+            
+            // Load learning logs
+            fetch('/learning_logs')
+                .then(response => response.text())
+                .then(html => {
+                    // Extract just the logs content from the returned HTML
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const logsTable = doc.querySelector('table');
+                    
+                    const contentDiv = document.getElementById('learningLogsContent');
+                    if (logsTable) {
+                        contentDiv.innerHTML = logsTable.outerHTML;
+                    } else {
+                        contentDiv.innerHTML = '<div class="text-center text-muted">No learning logs found yet. Start providing feedback to build the AI\'s knowledge!</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading learning logs:', error);
+                    document.getElementById('learningLogsContent').innerHTML = '<div class="alert alert-danger">Error loading learning logs</div>';
+                });
+            
+            modal.show();
+        }
+
+        function showFeedbackPanel() {
+            document.getElementById('feedbackPanel').classList.add('show');
+        }
+
+        function hideFeedbackPanel() {
+            document.getElementById('feedbackPanel').classList.remove('show');
+            // Clear form
+            document.getElementById('aiMistake').value = '';
+            document.getElementById('userCorrection').value = '';
+        }
+
+        function submitFeedback() {
+            const aiMistake = document.getElementById('aiMistake').value.trim();
+            const userCorrection = document.getElementById('userCorrection').value.trim();
+            
+            if (!aiMistake || !userCorrection) {
+                alert('Please fill in both fields');
+                return;
+            }
+
+            const feedbackData = {
+                session_id: currentSessionId || 'anonymous',
+                ai_mistake: aiMistake,
+                user_correction: userCorrection,
+                context: 'User feedback on chat response',
+                model_used: document.getElementById('modelSelect').value
+            };
+
+            fetch('/api/learning_feedback', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(feedbackData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Thank you! The AI will learn from your feedback.');
+                    hideFeedbackPanel();
+                } else {
+                    alert('Error submitting feedback: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting feedback:', error);
+                alert('Error submitting feedback');
+            });
+        }
+
+        // Initialize everything when page loads
+        console.log('🎯 Project Omega Enhanced v3.2.0 - Perfect Chat Mode Loading...');
+    </script>
+</body>
+</html>

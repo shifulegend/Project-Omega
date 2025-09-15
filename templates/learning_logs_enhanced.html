@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Learning Logs - Project Omega Enhanced v3.2.0</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --dark-bg: #1a1a2e;
+            --darker-bg: #16213e;
+            --message-bg: #2a2a3e;
+            --border-color: #333;
+            --text-light: #ffffff;
+            --text-muted: #b3b3b3;
+        }
+
+        body {
+            background: var(--dark-bg);
+            color: var(--text-light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 20px 0;
+        }
+
+        .card {
+            background: var(--message-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .card-header {
+            background: var(--darker-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table-dark {
+            background-color: var(--message-bg);
+            border-color: var(--border-color);
+        }
+
+        .table-dark th,
+        .table-dark td {
+            border-color: var(--border-color);
+            color: var(--text-light);
+        }
+
+        .badge {
+            font-size: 0.75rem;
+        }
+
+        .learning-item {
+            background: var(--message-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .learning-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .effectiveness-bar {
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .effectiveness-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dc3545 0%, #ffc107 50%, #28a745 100%);
+            transition: width 0.3s ease;
+        }
+
+        .stats-card {
+            background: var(--darker-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-gradient);
+            transform: translateY(-1px);
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+
+        .alert-info {
+            background-color: rgba(102, 126, 234, 0.1);
+            border-color: rgba(102, 126, 234, 0.2);
+            color: var(--text-light);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="bi bi-journal-text"></i> AI Learning Logs</h1>
+                    <p class="mb-0">Track how the AI learns from your feedback and corrections</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="/" class="btn btn-light">
+                        <i class="bi bi-arrow-left"></i> Back to Chat
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        {% if error %}
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> Error loading learning logs: {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ logs|length }}</div>
+                    <div class="text-muted">Total Learnings</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ logs|selectattr('applied_count', 'greaterthan', 0)|list|length }}</div>
+                    <div class="text-muted">Applied Learnings</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ (logs|map(attribute='applied_count')|sum) }}</div>
+                    <div class="text-muted">Total Applications</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ "%.1f"|format((logs|map(attribute='effectiveness_score')|sum / logs|length) if logs else 0) }}</div>
+                    <div class="text-muted">Avg Effectiveness</div>
+                </div>
+            </div>
+        </div>
+
+        {% if logs %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-brain"></i> Learning History</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>How AI Learning Works:</strong> When you provide feedback on incorrect AI responses, 
+                    the system records these corrections and applies them to improve future responses. 
+                    Effectiveness scores increase when learnings successfully prevent similar mistakes.
+                </div>
+
+                {% for log in logs %}
+                <div class="learning-item">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-2">
+                                <h6 class="mb-1">
+                                    <i class="bi bi-exclamation-triangle text-warning"></i> 
+                                    AI Mistake
+                                </h6>
+                                <p class="text-muted mb-2">{{ log.ai_mistake[:200] }}{% if log.ai_mistake|length > 200 %}...{% endif %}</p>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <h6 class="mb-1">
+                                    <i class="bi bi-check-circle text-success"></i> 
+                                    User Correction
+                                </h6>
+                                <p class="text-light mb-2">{{ log.user_correction[:200] }}{% if log.user_correction|length > 200 %}...{% endif %}</p>
+                            </div>
+
+                            {% if log.context %}
+                            <div class="mb-2">
+                                <h6 class="mb-1">
+                                    <i class="bi bi-file-text text-info"></i> 
+                                    Context
+                                </h6>
+                                <p class="text-muted small">{{ log.context[:150] }}{% if log.context|length > 150 %}...{% endif %}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="text-end">
+                                <div class="mb-2">
+                                    <span class="badge bg-primary">{{ log.model_used or 'Unknown Model' }}</span>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar"></i> 
+                                        {{ log.created_at[:19] }}
+                                    </small>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-arrow-repeat"></i> 
+                                        Applied {{ log.applied_count }} times
+                                    </small>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <small class="text-muted d-block">Effectiveness:</small>
+                                    <div class="effectiveness-bar">
+                                        <div class="effectiveness-fill" 
+                                             style="width: {{ (log.effectiveness_score * 20)|round|int }}%"></div>
+                                    </div>
+                                    <small class="text-muted">{{ "%.1f"|format(log.effectiveness_score) }}/5.0</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if log.learning_summary %}
+                    <div class="mt-3 pt-3 border-top border-secondary">
+                        <small class="text-muted">
+                            <i class="bi bi-lightbulb"></i> 
+                            <strong>Learning Summary:</strong> {{ log.learning_summary }}
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Usage Instructions -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-question-circle"></i> How to Use AI Learning</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-1-circle text-primary"></i> Identify Mistakes</h6>
+                        <p class="text-muted">When the AI provides incorrect information or doesn't follow instructions properly, click the "Provide Feedback" button.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-2-circle text-primary"></i> Provide Corrections</h6>
+                        <p class="text-muted">Describe what the AI got wrong and provide the correct information or behavior.</p>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-3-circle text-primary"></i> AI Learns</h6>
+                        <p class="text-muted">The system records your feedback and applies it to improve future responses across all sessions.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-4-circle text-primary"></i> Track Progress</h6>
+                        <p class="text-muted">Monitor effectiveness scores to see how well learnings are preventing similar mistakes.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-journal-x" style="font-size: 4rem; color: var(--text-muted);"></i>
+                <h4 class="mt-3 mb-2">No Learning Logs Yet</h4>
+                <p class="text-muted mb-4">
+                    Start providing feedback on AI responses to build a knowledge base that improves the AI's performance across all sessions.
+                </p>
+                <a href="/" class="btn btn-primary">
+                    <i class="bi bi-chat-dots"></i> Start Chatting
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <footer class="mt-5 py-4 bg-dark">
+        <div class="container text-center">
+            <p class="text-muted mb-0">
+                <i class="bi bi-robot"></i> Project Omega Enhanced v3.2.0 - Perfect Chat Mode
+                <br>
+                <small>Persistent AI learning system that remembers your corrections across all sessions</small>
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

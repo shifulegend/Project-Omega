@@ -1,0 +1,32 @@
+# Project Omega Enhanced v3.2.0 - Perfect Chat Mode Requirements
+# Core Flask components
+Flask==2.3.3
+Flask-SocketIO==5.3.6
+
+# HTTP requests and networking
+requests==2.31.0
+
+# WebSocket support
+python-socketio==5.9.0
+python-engineio==4.7.1
+
+# Background task handling
+eventlet==0.33.3
+
+# Additional utilities
+markdown==3.5.1
+werkzeug==2.3.7
+
+# Note: Built-in Python modules used:
+# - sqlite3 (built-in)
+# - uuid (built-in)
+# - logging (built-in)
+# - threading (built-in)
+# - subprocess (built-in)
+# - hashlib (built-in)
+# - re (built-in)
+# - datetime (built-in)
+# - json (built-in)
+# - time (built-in)
+# - typing (built-in)
+# - os (built-in)
