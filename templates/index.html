@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Omega Enhanced - AI Chat Interface</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar h2 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 24px;
+            text-align: center;
+        }
+        
+        .new-session-btn {
+            width: 100%;
+            padding: 12px;
+            background: rgba(76, 175, 80, 0.8);
+            border: 1px solid rgba(76, 175, 80, 0.9);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .new-session-btn:hover {
+            background: rgba(76, 175, 80, 1);
+            transform: translateY(-2px);
+        }
+        
+        .session-item {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .session-item:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateX(5px);
+        }
+        
+        .session-item.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .session-name {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .session-model {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .model-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        
+        .model-badge.high-reasoning {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .model-badge.standard {
+            background: #4ecdc4;
+            color: white;
+        }
+        
+        .delete-session {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(244, 67, 54, 0.8);
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .session-item:hover .delete-session {
+            opacity: 1;
+        }
+        
+        .delete-session:hover {
+            background: rgba(244, 67, 54, 1);
+            transform: scale(1.1);
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+        }
+        
+        .chat-header {
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .session-info {
+            color: white;
+        }
+        
+        .session-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .session-details {
+            font-size: 12px;
+            opacity: 0.8;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .status-ready { background: rgba(76, 175, 80, 0.8); }
+        .status-thinking { background: rgba(255, 193, 7, 0.8); }
+        .status-error { background: rgba(244, 67, 54, 0.8); }
+        
+        .settings-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            color: white;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.4;
+            position: relative;
+        }
+        
+        .message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+        }
+        
+        .message.assistant {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .message-meta {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-top: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .message.assistant .message-meta {
+            color: #666;
+        }
+        
+        .message.user .message-meta {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .input-container {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            resize: none;
+            min-height: 44px;
+            max-height: 120px;
+            font-family: inherit;
+        }
+        
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .close:hover {
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .model-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+        
+        .model-info {
+            flex: 1;
+        }
+        
+        .model-name {
+            font-weight: 600;
+        }
+        
+        .model-description {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .advanced-settings {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .settings-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        
+        .thinking-info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #1976d2;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 200px;
+                overflow-x: auto;
+                padding: 15px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 2% auto;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>🧠 Project Omega</h2>
+        <button class="new-session-btn" onclick="showNewSessionModal()">
+            + New Chat Session
+        </button>
+        <div id="sessions-list">
+            <!-- Sessions will be loaded here -->
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="chat-header">
+            <div class="session-info">
+                <div class="session-title" id="current-session-name">Select a session to start chatting</div>
+                <div class="session-details">
+                    <span id="current-model">No model selected</span>
+                    <span class="status-indicator status-ready" id="status-indicator">
+                        <span id="status-text">Ready</span>
+                    </span>
+                </div>
+            </div>
+            <button class="settings-btn" onclick="showSessionSettings()" id="settings-btn" disabled>
+                ⚙️ Settings
+            </button>
+        </div>
+
+        <div class="chat-container" id="chat-container">
+            <div style="text-align: center; color: rgba(255, 255, 255, 0.7); margin-top: 50px;">
+                <h3>Welcome to Project Omega Enhanced! 🚀</h3>
+                <p>Create a new session or select an existing one to start chatting with AI models.</p>
+                <p style="margin-top: 20px; font-size: 14px;">
+                    Features: Session Management • System Prompts • Advanced AI Settings • Status Tracking
+                </p>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <div class="input-group">
+                <textarea 
+                    class="message-input" 
+                    id="message-input" 
+                    placeholder="Type your message here... (Ctrl+Enter to send)"
+                    disabled
+                ></textarea>
+                <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled>
+                    ➤
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Session Modal -->
+    <div id="new-session-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create New Chat Session</h2>
+                <span class="close" onclick="closeNewSessionModal()">&times;</span>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Session Name</label>
+                <input type="text" class="form-input" id="new-session-name" placeholder="Enter session name">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">AI Model</label>
+                <select class="form-select" id="new-session-model">
+                    <!-- Models will be loaded here -->
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">System Prompt (Optional)</label>
+                <textarea class="form-textarea" id="new-session-system-prompt" 
+                    placeholder="Set the AI's behavior and personality for this session..."></textarea>
+            </div>
+            
+            <div class="advanced-settings">
+                <div class="settings-header">Advanced AI Settings</div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Temperature (0.0 - 2.0)</label>
+                        <input type="number" class="form-input" id="new-session-temperature" 
+                            min="0" max="2" step="0.1" value="0.7">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Tokens</label>
+                        <input type="number" class="form-input" id="new-session-max-tokens" 
+                            min="100" max="8192" step="100" value="2048">
+                    </div>
+                </div>
+                
+                <div class="form-row" id="thinking-settings" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Thinking Mode</label>
+                        <select class="form-select" id="new-session-thinking-mode">
+                            <option value="auto">Auto</option>
+                            <option value="enabled">Enabled</option>
+                            <option value="disabled">Disabled</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Thinking Budget</label>
+                        <input type="number" class="form-input" id="new-session-thinking-budget" 
+                            min="1000" max="50000" step="1000" value="10000">
+                    </div>
+                </div>
+                
+                <div class="thinking-info" id="thinking-info" style="display: none;">
+                    💡 This model supports advanced reasoning capabilities. Thinking mode allows the AI to process complex problems more thoughtfully.
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeNewSessionModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createSession()">Create Session</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Settings Modal -->
+    <div id="session-settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Session Settings</h2>
+                <span class="close" onclick="closeSessionSettings()">&times;</span>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Session Name</label>
+                <input type="text" class="form-input" id="edit-session-name">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">AI Model</label>
+                <select class="form-select" id="edit-session-model">
+                    <!-- Models will be loaded here -->
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">System Prompt</label>
+                <textarea class="form-textarea" id="edit-session-system-prompt" 
+                    placeholder="Set the AI's behavior and personality for this session..."></textarea>
+            </div>
+            
+            <div class="advanced-settings">
+                <div class="settings-header">Advanced AI Settings</div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Temperature (0.0 - 2.0)</label>
+                        <input type="number" class="form-input" id="edit-session-temperature" 
+                            min="0" max="2" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Tokens</label>
+                        <input type="number" class="form-input" id="edit-session-max-tokens" 
+                            min="100" max="8192" step="100">
+                    </div>
+                </div>
+                
+                <div class="form-row" id="edit-thinking-settings" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Thinking Mode</label>
+                        <select class="form-select" id="edit-session-thinking-mode">
+                            <option value="auto">Auto</option>
+                            <option value="enabled">Enabled</option>
+                            <option value="disabled">Disabled</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Thinking Budget</label>
+                        <input type="number" class="form-input" id="edit-session-thinking-budget" 
+                            min="1000" max="50000" step="1000">
+                    </div>
+                </div>
+                
+                <div class="thinking-info" id="edit-thinking-info" style="display: none;">
+                    💡 This model supports advanced reasoning capabilities. Thinking mode allows the AI to process complex problems more thoughtfully.
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeSessionSettings()">Cancel</button>
+                <button class="btn btn-primary" onclick="updateSession()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let socket;
+        let currentSessionId = null;
+        let availableModels = [];
+        let sessions = [];
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+        
+        function initializeApp() {
+            // Initialize Socket.IO connection
+            socket = io();
+            
+            // Socket event handlers
+            socket.on('connect', function() {
+                console.log('Connected to server');
+                updateStatus('ready', 'Connected');
+            });
+            
+            socket.on('disconnect', function() {
+                console.log('Disconnected from server');
+                updateStatus('error', 'Disconnected');
+            });
+            
+            socket.on('ai_response', function(data) {
+                addMessage('assistant', data.message, {
+                    thinking_time: data.thinking_time,
+                    token_count: data.token_count,
+                    model: data.model
+                });
+                updateStatus('ready', 'Ready');
+                enableInput();
+            });
+            
+            socket.on('error', function(data) {
+                console.error('Error:', data.message);
+                updateStatus('error', data.message);
+                enableInput();
+            });
+            
+            socket.on('status_update', function(data) {
+                updateStatus(data.status, data.message);
+            });
+            
+            // Load initial data
+            loadModels();
+            loadSessions();
+            
+            // Set up input handlers
+            const messageInput = document.getElementById('message-input');
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            // Auto-resize textarea
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+        }
+        
+        async function loadModels() {
+            try {
+                const response = await fetch('/api/models');
+                availableModels = await response.json();
+                populateModelSelects();
+            } catch (error) {
+                console.error('Error loading models:', error);
+            }
+        }
+        
+        function populateModelSelects() {
+            const selects = ['new-session-model', 'edit-session-model'];
+            
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '';
+                
+                availableModels.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.innerHTML = `
+                        <div class="model-option">
+                            <div class="model-info">
+                                <div class="model-name">${model.name}</div>
+                                <div class="model-description">${model.description}</div>
+                            </div>
+                            <span class="model-badge ${model.type}">${model.type === 'high_reasoning' ? 'HIGH REASONING' : 'STANDARD'}</span>
+                        </div>
+                    `;
+                    select.appendChild(option);
+                });
+            });
+            
+            // Set up model change handlers
+            document.getElementById('new-session-model').addEventListener('change', function() {
+                updateThinkingSettings('new', this.value);
+            });
+            
+            document.getElementById('edit-session-model').addEventListener('change', function() {
+                updateThinkingSettings('edit', this.value);
+            });
+        }
+        
+        function updateThinkingSettings(prefix, modelId) {
+            const model = availableModels.find(m => m.id === modelId);
+            const thinkingSettings = document.getElementById(`${prefix === 'new' ? '' : 'edit-'}thinking-settings`);
+            const thinkingInfo = document.getElementById(`${prefix === 'new' ? '' : 'edit-'}thinking-info`);
+            const temperatureInput = document.getElementById(`${prefix}-session-temperature`);
+            
+            if (model) {
+                temperatureInput.value = model.default_temperature;
+                
+                if (model.supports_thinking) {
+                    thinkingSettings.style.display = 'flex';
+                    thinkingInfo.style.display = 'block';
+                } else {
+                    thinkingSettings.style.display = 'none';
+                    thinkingInfo.style.display = 'none';
+                }
+            }
+        }
+        
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/sessions');
+                sessions = await response.json();
+                renderSessions();
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+            }
+        }
+        
+        function renderSessions() {
+            const sessionsList = document.getElementById('sessions-list');
+            sessionsList.innerHTML = '';
+            
+            sessions.forEach(session => {
+                const model = availableModels.find(m => m.id === session.model) || { name: session.model, type: 'standard' };
+                
+                const sessionItem = document.createElement('div');
+                sessionItem.className = `session-item ${currentSessionId === session.id ? 'active' : ''}`;
+                sessionItem.onclick = () => selectSession(session.id);
+                
+                sessionItem.innerHTML = `
+                    <div class="session-name">${session.name}</div>
+                    <div class="session-model">
+                        <span>${model.name}</span>
+                        <span class="model-badge ${model.type}">
+                            ${model.type === 'high_reasoning' ? 'HIGH REASONING' : 'STANDARD'}
+                        </span>
+                    </div>
+                    <button class="delete-session" onclick="event.stopPropagation(); deleteSession(${session.id})" title="Delete session">
+                        ×
+                    </button>
+                `;
+                
+                sessionsList.appendChild(sessionItem);
+            });
+        }
+        
+        async function selectSession(sessionId) {
+            currentSessionId = sessionId;
+            
+            try {
+                const response = await fetch(`/api/sessions/${sessionId}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Error loading session:', data.error);
+                    return;
+                }
+                
+                // Update UI
+                document.getElementById('current-session-name').textContent = data.session.name;
+                const model = availableModels.find(m => m.id === data.session.model) || { name: data.session.model, type: 'standard' };
+                document.getElementById('current-model').innerHTML = `
+                    <span>${model.name}</span>
+                    <span class="model-badge ${model.type}">
+                        ${model.type === 'high_reasoning' ? 'HIGH REASONING' : 'STANDARD'}
+                    </span>
+                `;
+                
+                // Enable input and settings
+                enableInput();
+                document.getElementById('settings-btn').disabled = false;
+                
+                // Load messages
+                loadSessionMessages(data.messages);
+                
+                // Update active session in sidebar
+                renderSessions();
+                
+            } catch (error) {
+                console.error('Error selecting session:', error);
+            }
+        }
+        
+        function loadSessionMessages(messages) {
+            const chatContainer = document.getElementById('chat-container');
+            chatContainer.innerHTML = '';
+            
+            messages.forEach(message => {
+                addMessage(message.role, message.content, {
+                    thinking_time: message.thinking_time,
+                    token_count: message.token_count,
+                    timestamp: message.timestamp
+                });
+            });
+        }
+        
+        function addMessage(role, content, meta = {}) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            let metaHtml = '';
+            if (role === 'assistant' && (meta.thinking_time || meta.token_count)) {
+                metaHtml = `
+                    <div class="message-meta">
+                        <span>${meta.thinking_time ? `💭 ${meta.thinking_time}s` : ''} ${meta.token_count ? `📊 ${meta.token_count} tokens` : ''}</span>
+                        <span>${new Date().toLocaleTimeString()}</span>
+                    </div>
+                `;
+            } else if (meta.timestamp) {
+                metaHtml = `
+                    <div class="message-meta">
+                        <span></span>
+                        <span>${new Date(meta.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                `;
+            }
+            
+            messageDiv.innerHTML = `
+                <div>${content}</div>
+                ${metaHtml}
+            `;
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function sendMessage() {
+            if (!currentSessionId) {
+                alert('Please select or create a session first');
+                return;
+            }
+            
+            const messageInput = document.getElementById('message-input');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessage('user', message);
+            
+            // Send to server
+            socket.emit('send_message', {
+                session_id: currentSessionId,
+                message: message
+            });
+            
+            // Clear input and disable
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            disableInput();
+            updateStatus('thinking', 'AI is thinking...');
+        }
+        
+        function enableInput() {
+            document.getElementById('message-input').disabled = false;
+            document.getElementById('send-btn').disabled = false;
+        }
+        
+        function disableInput() {
+            document.getElementById('message-input').disabled = true;
+            document.getElementById('send-btn').disabled = true;
+        }
+        
+        function updateStatus(status, message) {
+            const indicator = document.getElementById('status-indicator');
+            const text = document.getElementById('status-text');
+            
+            indicator.className = `status-indicator status-${status}`;
+            
+            if (status === 'thinking') {
+                text.innerHTML = `<span class="loading-spinner"></span> ${message}`;
+            } else {
+                text.textContent = message;
+            }
+        }
+        
+        // Modal functions
+        function showNewSessionModal() {
+            document.getElementById('new-session-modal').style.display = 'block';
+            
+            // Set default values
+            document.getElementById('new-session-name').value = `Chat ${new Date().toLocaleString()}`;
+            if (availableModels.length > 0) {
+                document.getElementById('new-session-model').value = availableModels[0].id;
+                updateThinkingSettings('new', availableModels[0].id);
+            }
+        }
+        
+        function closeNewSessionModal() {
+            document.getElementById('new-session-modal').style.display = 'none';
+        }
+        
+        async function createSession() {
+            const sessionData = {
+                name: document.getElementById('new-session-name').value,
+                model: document.getElementById('new-session-model').value,
+                system_prompt: document.getElementById('new-session-system-prompt').value,
+                temperature: parseFloat(document.getElementById('new-session-temperature').value),
+                thinking_mode: document.getElementById('new-session-thinking-mode').value,
+                thinking_budget: parseInt(document.getElementById('new-session-thinking-budget').value),
+                max_tokens: parseInt(document.getElementById('new-session-max-tokens').value)
+            };
+            
+            try {
+                const response = await fetch('/api/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sessionData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.id) {
+                    closeNewSessionModal();
+                    await loadSessions();
+                    selectSession(result.id);
+                }
+            } catch (error) {
+                console.error('Error creating session:', error);
+                alert('Error creating session');
+            }
+        }
+        
+        function showSessionSettings() {
+            if (!currentSessionId) return;
+            
+            const session = sessions.find(s => s.id === currentSessionId);
+            if (!session) return;
+            
+            // Populate form
+            document.getElementById('edit-session-name').value = session.name;
+            document.getElementById('edit-session-model').value = session.model;
+            document.getElementById('edit-session-system-prompt').value = session.system_prompt || '';
+            document.getElementById('edit-session-temperature').value = session.temperature;
+            document.getElementById('edit-session-thinking-mode').value = session.thinking_mode;
+            document.getElementById('edit-session-thinking-budget').value = session.thinking_budget;
+            document.getElementById('edit-session-max-tokens').value = session.max_tokens;
+            
+            updateThinkingSettings('edit', session.model);
+            
+            document.getElementById('session-settings-modal').style.display = 'block';
+        }
+        
+        function closeSessionSettings() {
+            document.getElementById('session-settings-modal').style.display = 'none';
+        }
+        
+        async function updateSession() {
+            if (!currentSessionId) return;
+            
+            const sessionData = {
+                name: document.getElementById('edit-session-name').value,
+                model: document.getElementById('edit-session-model').value,
+                system_prompt: document.getElementById('edit-session-system-prompt').value,
+                temperature: parseFloat(document.getElementById('edit-session-temperature').value),
+                thinking_mode: document.getElementById('edit-session-thinking-mode').value,
+                thinking_budget: parseInt(document.getElementById('edit-session-thinking-budget').value),
+                max_tokens: parseInt(document.getElementById('edit-session-max-tokens').value)
+            };
+            
+            try {
+                const response = await fetch(`/api/sessions/${currentSessionId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sessionData)
+                });
+                
+                if (response.ok) {
+                    closeSessionSettings();
+                    await loadSessions();
+                    selectSession(currentSessionId);
+                }
+            } catch (error) {
+                console.error('Error updating session:', error);
+                alert('Error updating session');
+            }
+        }
+        
+        async function deleteSession(sessionId) {
+            if (!confirm('Are you sure you want to delete this session? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/sessions/${sessionId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    if (currentSessionId === sessionId) {
+                        currentSessionId = null;
+                        document.getElementById('current-session-name').textContent = 'Select a session to start chatting';
+                        document.getElementById('current-model').textContent = 'No model selected';
+                        document.getElementById('chat-container').innerHTML = `
+                            <div style="text-align: center; color: rgba(255, 255, 255, 0.7); margin-top: 50px;">
+                                <h3>Session deleted</h3>
+                                <p>Create a new session or select an existing one to continue chatting.</p>
+                            </div>
+                        `;
+                        disableInput();
+                        document.getElementById('settings-btn').disabled = true;
+                    }
+                    await loadSessions();
+                }
+            } catch (error) {
+                console.error('Error deleting session:', error);
+                alert('Error deleting session');
+            }
+        }
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
