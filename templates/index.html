@@ -185,6 +185,131 @@
         .status-thinking { background: rgba(255, 193, 7, 0.8); }
         .status-error { background: rgba(244, 67, 54, 0.8); }
         
+        /* Tooltip styles */
+        .info-tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 8px;
+            cursor: help;
+        }
+        
+        .info-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            text-align: center;
+            line-height: 16px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .info-icon:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .tooltip-content {
+            visibility: hidden;
+            width: 300px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            text-align: left;
+            border-radius: 6px;
+            padding: 12px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 13px;
+            line-height: 1.4;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .tooltip-content::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+        }
+        
+        .info-tooltip:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .tooltip-title {
+            font-weight: bold;
+            color: #64b5f6;
+            margin-bottom: 4px;
+        }
+        
+        .tooltip-default {
+            font-style: italic;
+            color: #81c784;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        
+        /* Connection status modal */
+        .connection-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+        
+        .connection-modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .connection-status-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .retry-btn {
+            background: rgba(76, 175, 80, 0.8);
+            border: 1px solid rgba(76, 175, 80, 0.9);
+            border-radius: 8px;
+            color: white;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .retry-btn:hover {
+            background: rgba(76, 175, 80, 1);
+            transform: translateY(-2px);
+        }
+        
+        .retry-btn:disabled {
+            background: rgba(128, 128, 128, 0.5);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
         .settings-btn {
             background: rgba(255, 255, 255, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.3);
@@ -565,12 +690,42 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Temperature (0.0 - 2.0)</label>
+                        <label class="form-label">
+                            Temperature (0.0 - 2.0)
+                            <span class="info-tooltip">
+                                <span class="info-icon">?</span>
+                                <div class="tooltip-content">
+                                    <div class="tooltip-title">Temperature</div>
+                                    Controls the randomness of AI responses. Lower values make responses more focused and deterministic, while higher values make them more creative and varied.
+                                    <br><br>
+                                    <strong>Examples:</strong><br>
+                                    • 0.1 - Very focused, consistent answers<br>
+                                    • 0.7 - Balanced creativity and focus<br>
+                                    • 1.5 - Highly creative and diverse
+                                    <div class="tooltip-default">Default: 0.7</div>
+                                </div>
+                            </span>
+                        </label>
                         <input type="number" class="form-input" id="new-session-temperature" 
                             min="0" max="2" step="0.1" value="0.7">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Max Tokens</label>
+                        <label class="form-label">
+                            Max Tokens
+                            <span class="info-tooltip">
+                                <span class="info-icon">?</span>
+                                <div class="tooltip-content">
+                                    <div class="tooltip-title">Max Tokens</div>
+                                    Limits the maximum length of AI responses. One token is roughly 4 characters or 0.75 words in English.
+                                    <br><br>
+                                    <strong>Examples:</strong><br>
+                                    • 512 - Short, concise responses<br>
+                                    • 2048 - Medium-length responses<br>
+                                    • 4096 - Long, detailed responses
+                                    <div class="tooltip-default">Default: 2048</div>
+                                </div>
+                            </span>
+                        </label>
                         <input type="number" class="form-input" id="new-session-max-tokens" 
                             min="100" max="8192" step="100" value="2048">
                     </div>
@@ -578,7 +733,22 @@
                 
                 <div class="form-row" id="thinking-settings" style="display: none;">
                     <div class="form-group">
-                        <label class="form-label">Thinking Mode</label>
+                        <label class="form-label">
+                            Thinking Mode
+                            <span class="info-tooltip">
+                                <span class="info-icon">?</span>
+                                <div class="tooltip-content">
+                                    <div class="tooltip-title">Thinking Mode</div>
+                                    Controls how the AI processes complex problems. Only available for high-reasoning models.
+                                    <br><br>
+                                    <strong>Options:</strong><br>
+                                    • Auto - AI decides when to think deeply<br>
+                                    • Enabled - Always shows reasoning process<br>
+                                    • Disabled - Direct responses only
+                                    <div class="tooltip-default">Default: Auto</div>
+                                </div>
+                            </span>
+                        </label>
                         <select class="form-select" id="new-session-thinking-mode">
                             <option value="auto">Auto</option>
                             <option value="enabled">Enabled</option>
@@ -635,12 +805,42 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Temperature (0.0 - 2.0)</label>
+                        <label class="form-label">
+                            Temperature (0.0 - 2.0)
+                            <span class="info-tooltip">
+                                <span class="info-icon">?</span>
+                                <div class="tooltip-content">
+                                    <div class="tooltip-title">Temperature</div>
+                                    Controls the randomness of AI responses. Lower values make responses more focused and deterministic, while higher values make them more creative and varied.
+                                    <br><br>
+                                    <strong>Examples:</strong><br>
+                                    • 0.1 - Very focused, consistent answers<br>
+                                    • 0.7 - Balanced creativity and focus<br>
+                                    • 1.5 - Highly creative and diverse
+                                    <div class="tooltip-default">Default: 0.7</div>
+                                </div>
+                            </span>
+                        </label>
                         <input type="number" class="form-input" id="edit-session-temperature" 
                             min="0" max="2" step="0.1">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Max Tokens</label>
+                        <label class="form-label">
+                            Max Tokens
+                            <span class="info-tooltip">
+                                <span class="info-icon">?</span>
+                                <div class="tooltip-content">
+                                    <div class="tooltip-title">Max Tokens</div>
+                                    Limits the maximum length of AI responses. One token is roughly 4 characters or 0.75 words in English.
+                                    <br><br>
+                                    <strong>Examples:</strong><br>
+                                    • 512 - Short, concise responses<br>
+                                    • 2048 - Medium-length responses<br>
+                                    • 4096 - Long, detailed responses
+                                    <div class="tooltip-default">Default: 2048</div>
+                                </div>
+                            </span>
+                        </label>
                         <input type="number" class="form-input" id="edit-session-max-tokens" 
                             min="100" max="8192" step="100">
                     </div>
@@ -648,7 +848,22 @@
                 
                 <div class="form-row" id="edit-thinking-settings" style="display: none;">
                     <div class="form-group">
-                        <label class="form-label">Thinking Mode</label>
+                        <label class="form-label">
+                            Thinking Mode
+                            <span class="info-tooltip">
+                                <span class="info-icon">?</span>
+                                <div class="tooltip-content">
+                                    <div class="tooltip-title">Thinking Mode</div>
+                                    Controls how the AI processes complex problems. Only available for high-reasoning models.
+                                    <br><br>
+                                    <strong>Options:</strong><br>
+                                    • Auto - AI decides when to think deeply<br>
+                                    • Enabled - Always shows reasoning process<br>
+                                    • Disabled - Direct responses only
+                                    <div class="tooltip-default">Default: Auto</div>
+                                </div>
+                            </span>
+                        </label>
                         <select class="form-select" id="edit-session-thinking-mode">
                             <option value="auto">Auto</option>
                             <option value="enabled">Enabled</option>
@@ -687,39 +902,194 @@
         });
         
         function initializeApp() {
-            // Initialize Socket.IO connection
-            socket = io();
+            // Connection management variables
+            let connectionAttempts = 0;
+            let maxReconnectAttempts = 5;
+            let reconnectDelay = 2000; // Start with 2 seconds
+            let autoRetryTimer = null;
+            let isConnected = false;
             
-            // Socket event handlers
-            socket.on('connect', function() {
-                console.log('Connected to server');
-                updateStatus('ready', 'Connected');
-            });
-            
-            socket.on('disconnect', function() {
-                console.log('Disconnected from server');
-                updateStatus('error', 'Disconnected');
-            });
-            
-            socket.on('ai_response', function(data) {
-                addMessage('assistant', data.message, {
-                    thinking_time: data.thinking_time,
-                    token_count: data.token_count,
-                    model: data.model
+            // Initialize Socket.IO connection with retry logic
+            function initializeSocket() {
+                socket = io({
+                    timeout: 10000,
+                    forceNew: true,
+                    reconnection: true,
+                    reconnectionAttempts: maxReconnectAttempts,
+                    reconnectionDelay: reconnectDelay,
+                    reconnectionDelayMax: 10000,
+                    randomizationFactor: 0.5
                 });
-                updateStatus('ready', 'Ready');
-                enableInput();
-            });
+                
+                setupSocketHandlers();
+            }
             
-            socket.on('error', function(data) {
-                console.error('Error:', data.message);
-                updateStatus('error', data.message);
-                enableInput();
-            });
+            function setupSocketHandlers() {
+                // Socket event handlers
+                socket.on('connect', function() {
+                    console.log('Connected to server');
+                    isConnected = true;
+                    connectionAttempts = 0;
+                    reconnectDelay = 2000; // Reset delay
+                    updateStatus('ready', 'Connected');
+                    closeConnectionModal();
+                });
+                
+                socket.on('disconnect', function(reason) {
+                    console.log('Disconnected from server:', reason);
+                    isConnected = false;
+                    updateStatus('error', 'Disconnected');
+                    
+                    // Show connection modal for unexpected disconnects
+                    if (reason !== 'io client disconnect') {
+                        showConnectionModal('Connection Lost', 'Lost connection to server. Attempting to reconnect...');
+                        scheduleAutoRetry();
+                    }
+                });
+                
+                socket.on('connect_error', function(error) {
+                    console.error('Connection error:', error);
+                    isConnected = false;
+                    connectionAttempts++;
+                    
+                    // Show connection modal on connection errors
+                    if (connectionAttempts === 1) {
+                        showConnectionModal('Connection Failed', 'Unable to connect to the server. Please check your connection.');
+                        scheduleAutoRetry();
+                    }
+                    
+                    updateStatus('error', `Connection failed (attempt ${connectionAttempts})`);
+                });
+                
+                socket.on('ai_response', function(data) {
+                    addMessage('assistant', data.message, {
+                        thinking_time: data.thinking_time,
+                        token_count: data.token_count,
+                        model: data.model
+                    });
+                    updateStatus('ready', 'Ready');
+                    enableInput();
+                });
+                
+                socket.on('error', function(data) {
+                    console.error('Socket error:', data.message || data);
+                    let errorMessage = data.message || 'An error occurred';
+                    
+                    // Show user-friendly error messages
+                    if (errorMessage.includes('connect')) {
+                        errorMessage = 'Connection error - please check your internet connection';
+                    } else if (errorMessage.includes('timeout')) {
+                        errorMessage = 'Request timed out - please try again';
+                    }
+                    
+                    updateStatus('error', errorMessage);
+                    enableInput();
+                    
+                    // Show error modal for persistent errors
+                    showErrorAlert('Error', errorMessage);
+                });
+                
+                socket.on('status_update', function(data) {
+                    updateStatus(data.status, data.message);
+                });
+            }
             
-            socket.on('status_update', function(data) {
-                updateStatus(data.status, data.message);
-            });
+            // Connection modal functions
+            function showConnectionModal(title, message) {
+                const modal = document.getElementById('connectionModal');
+                const titleEl = document.getElementById('connectionTitle');
+                const messageEl = document.getElementById('connectionMessage');
+                const iconEl = document.getElementById('connectionIcon');
+                
+                titleEl.textContent = title;
+                messageEl.textContent = message;
+                iconEl.textContent = '⚠️';
+                modal.style.display = 'block';
+            }
+            
+            function closeConnectionModal() {
+                const modal = document.getElementById('connectionModal');
+                modal.style.display = 'none';
+                clearAutoRetryTimer();
+            }
+            
+            function retryConnection() {
+                const retryBtn = document.getElementById('retryBtn');
+                retryBtn.disabled = true;
+                retryBtn.textContent = 'Retrying...';
+                
+                clearAutoRetryTimer();
+                
+                if (socket) {
+                    socket.disconnect();
+                }
+                
+                setTimeout(() => {
+                    initializeSocket();
+                    retryBtn.disabled = false;
+                    retryBtn.textContent = 'Retry Connection';
+                }, 1000);
+            }
+            
+            function scheduleAutoRetry() {
+                clearAutoRetryTimer();
+                let countdown = 30;
+                const counterEl = document.getElementById('autoRetryCounter');
+                
+                autoRetryTimer = setInterval(() => {
+                    countdown--;
+                    if (counterEl) {
+                        counterEl.textContent = countdown;
+                    }
+                    
+                    if (countdown <= 0) {
+                        clearAutoRetryTimer();
+                        if (!isConnected) {
+                            retryConnection();
+                        }
+                    }
+                }, 1000);
+            }
+            
+            function clearAutoRetryTimer() {
+                if (autoRetryTimer) {
+                    clearInterval(autoRetryTimer);
+                    autoRetryTimer = null;
+                }
+            }
+            
+            function showErrorAlert(title, message) {
+                // Create a temporary error alert
+                const alert = document.createElement('div');
+                alert.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #f44336;
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    z-index: 3000;
+                    max-width: 300px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                `;
+                alert.innerHTML = `
+                    <strong>${title}</strong><br>
+                    ${message}
+                `;
+                
+                document.body.appendChild(alert);
+                
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.parentNode.removeChild(alert);
+                    }
+                }, 5000);
+            }
+            
+            // Initialize connection
+            initializeSocket();
             
             // Load initial data
             loadModels();
@@ -1115,5 +1485,26 @@
             });
         }
     </script>
+    
+    <!-- Connection Status Modal -->
+    <div id="connectionModal" class="connection-modal">
+        <div class="connection-modal-content">
+            <div id="connectionIcon" class="connection-status-icon">🔄</div>
+            <h3 id="connectionTitle">Connection Issue</h3>
+            <p id="connectionMessage">Unable to connect to the server. This might be due to:</p>
+            <ul style="text-align: left; margin: 15px 0;">
+                <li>Temporary server downtime</li>
+                <li>Network connectivity issues</li>
+                <li>Server maintenance in progress</li>
+            </ul>
+            <div>
+                <button id="retryBtn" class="retry-btn" onclick="retryConnection()">Retry Connection</button>
+                <button class="retry-btn" onclick="closeConnectionModal()">Continue Offline</button>
+            </div>
+            <p style="font-size: 12px; margin-top: 15px; opacity: 0.8;">
+                Auto-retry in <span id="autoRetryCounter">30</span> seconds
+            </p>
+        </div>
+    </div>
 </body>
 </html>
