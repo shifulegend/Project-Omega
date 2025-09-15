@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Omega Enhanced v3.0.0 - Advanced AI Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header .version {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            max-height: calc(100vh - 150px);
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 300px);
+        }
+
+        .chat-input-container {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .tooltip {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            font-size: 12px;
+            line-height: 16px;
+            cursor: help;
+            margin-left: 5px;
+            position: relative;
+        }
+
+        .tooltip:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
+            font-size: 12px;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .form-group select,
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 12px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.assistant {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+        }
+
+        .message.agent {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+            color: white;
+            border-left: 4px solid #ffc107;
+        }
+
+        .message.command-result {
+            background: #000;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #333;
+        }
+
+        .message pre {
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+
+        .message code {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-online {
+            background: #28a745;
+        }
+
+        .status-offline {
+            background: #dc3545;
+        }
+
+        .status-connecting {
+            background: #ffc107;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .feature-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .pill {
+            background: #e9ecef;
+            color: #495057;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.875rem;
+            border: 1px solid #dee2e6;
+        }
+
+        .pill.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .tunnels-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .tunnel-url {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            border: 1px solid #dee2e6;
+        }
+
+        .tunnel-url a {
+            color: #007bff;
+            text-decoration: none;
+            flex: 1;
+            margin-right: 0.5rem;
+        }
+
+        .tunnel-url a:hover {
+            text-decoration: underline;
+        }
+
+        .learning-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .learning-log {
+            background: white;
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid #007bff;
+        }
+
+        .learning-log .summary {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .learning-log .meta {
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .close {
+            font-size: 2rem;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+
+        .chat-input textarea {
+            flex: 1;
+            min-height: 50px;
+            max-height: 150px;
+            resize: vertical;
+        }
+
+        .feedback-section {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .feedback-section.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                order: 2;
+            }
+            
+            .chat-container {
+                order: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Project Omega Enhanced</h1>
+        <div class="version">v3.0.0 - Multi-Tunnel • Self-Learning • Internet Access • Agent Mode</div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <!-- Session Management -->
+            <div class="section-title">💬 Chat Session</div>
+            <div class="form-group">
+                <label for="sessionName">Session Name</label>
+                <input type="text" id="sessionName" placeholder="My Chat Session" value="Default Session">
+            </div>
+            
+            <!-- Model Selection -->
+            <div class="section-title">🤖 AI Model</div>
+            <div class="form-group">
+                <label for="modelSelect">Model 
+                    <span class="tooltip" title="Choose AI model. Agent mode provides terminal access to RunPod instance">(?)</span>
+                </label>
+                <select id="modelSelect">
+                    {% for model_id, config in models.items() %}
+                    <option value="{{ model_id }}" 
+                            data-thinking="{{ config.supports_thinking|lower }}"
+                            data-internet="{{ config.supports_internet|lower }}"
+                            data-terminal="{{ config.supports_terminal|default(false)|lower }}">
+                        {{ config.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <small class="model-description" id="modelDescription">Fast and efficient general-purpose model with web search</small>
+            </div>
+
+            <!-- AI Settings -->
+            <div class="section-title">⚙️ AI Settings</div>
+            <div class="form-group">
+                <label for="temperature">Temperature 
+                    <span class="tooltip" title="Controls randomness. Default: 0.7. Lower (0.1) = focused, Higher (1.5) = creative">(?)</span>
+                </label>
+                <input type="range" id="temperature" min="0.1" max="2.0" step="0.1" value="0.7">
+                <span id="temperatureValue">0.7</span>
+            </div>
+            
+            <div class="form-group">
+                <label for="maxTokens">Max Tokens 
+                    <span class="tooltip" title="Maximum response length. Default: 2048. Higher = longer responses">(?)</span>
+                </label>
+                <input type="range" id="maxTokens" min="256" max="4096" step="256" value="2048">
+                <span id="maxTokensValue">2048</span>
+            </div>
+
+            <!-- Enhanced Features -->
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="thinkingMode">
+                    <label for="thinkingMode">Thinking Mode 
+                        <span class="tooltip" title="AI shows reasoning process. Helps with complex problems">(?)</span>
+                    </label>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="internetAccess" checked>
+                    <label for="internetAccess">Internet Access 
+                        <span class="tooltip" title="AI can search web for current information. Enhances responses with latest data">(?)</span>
+                    </label>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="agentMode">
+                    <label for="agentMode">Agent Mode 
+                        <span class="tooltip" title="AI can execute terminal commands on RunPod. Use /cmd [command] to run commands">(?)</span>
+                    </label>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="learningMode" checked>
+                    <label for="learningMode">Learning Mode 
+                        <span class="tooltip" title="AI learns from corrections and feedback to improve future responses">(?)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- System Prompt -->
+            <div class="form-group">
+                <label for="systemPrompt">System Prompt 
+                    <span class="tooltip" title="Instructions for AI behavior. Example: 'Act as a helpful coding assistant'">(?)</span>
+                </label>
+                <textarea id="systemPrompt" rows="4" placeholder="You are a helpful AI assistant..."></textarea>
+            </div>
+
+            <!-- Tunnel URLs Section -->
+            <div class="section-title">🌐 Active Tunnels</div>
+            <div class="tunnels-section">
+                <div id="tunnelsList">
+                    <div class="tunnel-url">
+                        <span class="status-indicator status-connecting"></span>
+                        <span>Starting tunnels...</span>
+                    </div>
+                </div>
+                <button class="btn btn-secondary btn-small" onclick="refreshTunnels()">🔄 Refresh</button>
+                <a href="/learning_logs" class="btn btn-warning btn-small" target="_blank">📚 View Learning Logs</a>
+            </div>
+
+            <!-- Learning Feedback Section -->
+            <div class="learning-section">
+                <div class="section-title">🧠 AI Learning</div>
+                <div id="recentLearnings">
+                    <small>Recent learnings will appear here...</small>
+                </div>
+                <button class="btn btn-primary btn-small" onclick="provideFeedback()">📝 Provide Feedback</button>
+            </div>
+
+            <!-- Session Controls -->
+            <div class="form-group">
+                <button class="btn btn-primary" onclick="createNewSession()">➕ New Session</button>
+                <button class="btn btn-secondary" onclick="saveSession()">💾 Save Session</button>
+                <button class="btn btn-danger" onclick="clearMessages()">🗑️ Clear Chat</button>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <div>
+                    <span class="status-indicator status-connecting" id="connectionStatus"></span>
+                    <span id="sessionTitle">Project Omega Enhanced v3.0.0</span>
+                </div>
+                <div class="feature-pills" id="activeFeatured">
+                    <span class="pill">🌐 Internet</span>
+                    <span class="pill">🧠 Learning</span>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <strong>🚀 Project Omega Enhanced v3.0.0</strong><br><br>
+                    Welcome to the enhanced AI chat interface! New features include:
+                    <ul>
+                        <li>🌐 <strong>Multiple Tunnel Providers</strong> - Cloudflare, ngrok, localtunnel, serveo</li>
+                        <li>🧠 <strong>Self-Learning AI</strong> - Learns from your corrections and feedback</li>
+                        <li>🔍 <strong>Internet Access</strong> - All models can search the web for current information</li>
+                        <li>🖥️ <strong>Agent Mode</strong> - Full RunPod terminal access (use /cmd [command])</li>
+                        <li>⚙️ <strong>Enhanced Settings</strong> - More control over AI behavior</li>
+                    </ul>
+                    <br>
+                    <strong>Agent Mode Commands:</strong><br>
+                    • <code>/cmd ls -la</code> - List files<br>
+                    • <code>/terminal pwd</code> - Show current directory<br>
+                    • <code>/cmd python --version</code> - Check Python version<br>
+                    <br>
+                    Try asking about current events, provide feedback on responses, or switch to Agent Mode for terminal access!
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <div class="chat-input">
+                    <textarea id="messageInput" placeholder="Type your message here... (Use /cmd or /terminal for agent commands)" 
+                              onkeypress="handleKeyPress(event)"></textarea>
+                    <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+                </div>
+                
+                <!-- Feedback Section -->
+                <div class="feedback-section" id="feedbackSection">
+                    <div class="section-title">📝 Provide Learning Feedback</div>
+                    <div class="form-group">
+                        <label>What did the AI get wrong?</label>
+                        <textarea id="aiMistake" rows="2" placeholder="Describe the incorrect response..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>What should the correct response be?</label>
+                        <textarea id="userCorrection" rows="2" placeholder="Provide the correct information..."></textarea>
+                    </div>
+                    <button class="btn btn-success btn-small" onclick="submitFeedback()">✅ Submit Learning</button>
+                    <button class="btn btn-secondary btn-small" onclick="cancelFeedback()">❌ Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Status Modal -->
+    <div id="connectionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔌 Connection Status</h3>
+                <span class="close" onclick="closeModal('connectionModal')">&times;</span>
+            </div>
+            <div id="connectionMessage">
+                <p>Connecting to Project Omega Enhanced...</p>
+                <div style="text-align: center; margin: 1rem 0;">
+                    <div class="status-indicator status-connecting" style="width: 20px; height: 20px;"></div>
+                </div>
+                <p><small>If connection fails, try refreshing or use alternative tunnel URLs above.</small></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let socket;
+        let currentSessionId = generateSessionId();
+        let lastAIResponse = '';
+        let lastUserMessage = '';
+        let currentModel = 'mistral:7b-instruct';
+        let isConnected = false;
+        let retryCount = 0;
+        const maxRetries = 5;
+        let retryTimeout;
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeWebSocket();
+            updateModelDescription();
+            updateFeaturePills();
+            refreshTunnels();
+            
+            // Setup event listeners
+            document.getElementById('modelSelect').addEventListener('change', function() {
+                currentModel = this.value;
+                updateModelDescription();
+                updateFeaturePills();
+                updateAgentModeVisibility();
+            });
+            
+            document.getElementById('temperature').addEventListener('input', function() {
+                document.getElementById('temperatureValue').textContent = this.value;
+            });
+            
+            document.getElementById('maxTokens').addEventListener('input', function() {
+                document.getElementById('maxTokensValue').textContent = this.value;
+            });
+            
+            document.getElementById('agentMode').addEventListener('change', updateAgentModeVisibility);
+        });
+
+        function generateSessionId() {
+            return 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        }
+
+        function initializeWebSocket() {
+            try {
+                socket = io();
+                
+                socket.on('connect', function() {
+                    isConnected = true;
+                    retryCount = 0;
+                    updateConnectionStatus('online', 'Connected to Project Omega Enhanced');
+                    closeModal('connectionModal');
+                });
+                
+                socket.on('disconnect', function() {
+                    isConnected = false;
+                    updateConnectionStatus('offline', 'Disconnected');
+                    attemptReconnect();
+                });
+                
+                socket.on('connect_error', function(error) {
+                    isConnected = false;
+                    updateConnectionStatus('offline', 'Connection failed');
+                    attemptReconnect();
+                });
+                
+                socket.on('message_response', function(data) {
+                    displayMessage('assistant', data.response, {
+                        model: data.model,
+                        internetUsed: data.internet_used,
+                        learningsApplied: data.learnings_applied,
+                        isCommandResult: data.is_command_result,
+                        commandSuccess: data.command_success
+                    });
+                    lastAIResponse = data.response;
+                });
+                
+                socket.on('error', function(data) {
+                    displayMessage('assistant', `❌ Error: ${data.message}`, { isError: true });
+                });
+                
+                socket.on('tunnels_update', function(tunnels) {
+                    updateTunnelsList(tunnels);
+                });
+                
+                socket.on('tunnel_update', function(data) {
+                    updateSingleTunnel(data);
+                });
+                
+                socket.on('status', function(data) {
+                    console.log('Status:', data.msg);
+                });
+                
+            } catch (error) {
+                console.error('WebSocket initialization error:', error);
+                updateConnectionStatus('offline', 'Failed to initialize connection');
+                showModal('connectionModal');
+            }
+        }
+
+        function attemptReconnect() {
+            if (retryCount < maxRetries) {
+                retryCount++;
+                const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+                
+                updateConnectionStatus('connecting', `Reconnecting... (${retryCount}/${maxRetries})`);
+                showModal('connectionModal');
+                
+                clearTimeout(retryTimeout);
+                retryTimeout = setTimeout(() => {
+                    initializeWebSocket();
+                }, delay);
+            } else {
+                updateConnectionStatus('offline', 'Connection failed - Please refresh');
+                document.getElementById('connectionMessage').innerHTML = `
+                    <p>❌ Unable to connect to Project Omega Enhanced</p>
+                    <p>Please try:</p>
+                    <ul>
+                        <li>Refreshing the page</li>
+                        <li>Using alternative tunnel URLs</li>
+                        <li>Checking server status</li>
+                    </ul>
+                    <button class="btn btn-primary" onclick="location.reload()">🔄 Refresh Page</button>
+                `;
+            }
+        }
+
+        function updateConnectionStatus(status, message) {
+            const indicator = document.getElementById('connectionStatus');
+            const sessionTitle = document.getElementById('sessionTitle');
+            
+            indicator.className = `status-indicator status-${status}`;
+            sessionTitle.textContent = message;
+        }
+
+        function updateModelDescription() {
+            const modelSelect = document.getElementById('modelSelect');
+            const selectedOption = modelSelect.options[modelSelect.selectedIndex];
+            const description = selectedOption.text;
+            
+            document.getElementById('modelDescription').textContent = description;
+            
+            // Update checkbox states based on model capabilities
+            const supportsThinking = selectedOption.dataset.thinking === 'true';
+            const supportsInternet = selectedOption.dataset.internet === 'true';
+            const supportsTerminal = selectedOption.dataset.terminal === 'true';
+            
+            document.getElementById('thinkingMode').disabled = !supportsThinking;
+            document.getElementById('internetAccess').disabled = !supportsInternet;
+            document.getElementById('agentMode').disabled = !supportsTerminal;
+            
+            if (!supportsThinking) document.getElementById('thinkingMode').checked = false;
+            if (!supportsInternet) document.getElementById('internetAccess').checked = false;
+            if (!supportsTerminal) document.getElementById('agentMode').checked = false;
+        }
+
+        function updateFeaturePills() {
+            const pills = document.getElementById('activeFeatured');
+            pills.innerHTML = '';
+            
+            const features = [];
+            
+            if (document.getElementById('internetAccess').checked) {
+                features.push({ icon: '🌐', text: 'Internet' });
+            }
+            
+            if (document.getElementById('learningMode').checked) {
+                features.push({ icon: '🧠', text: 'Learning' });
+            }
+            
+            if (document.getElementById('thinkingMode').checked) {
+                features.push({ icon: '🤔', text: 'Thinking' });
+            }
+            
+            if (document.getElementById('agentMode').checked) {
+                features.push({ icon: '🖥️', text: 'Agent' });
+            }
+            
+            features.forEach(feature => {
+                const pill = document.createElement('span');
+                pill.className = 'pill active';
+                pill.textContent = `${feature.icon} ${feature.text}`;
+                pills.appendChild(pill);
+            });
+        }
+
+        function updateAgentModeVisibility() {
+            const agentMode = document.getElementById('agentMode').checked;
+            const messageInput = document.getElementById('messageInput');
+            
+            if (agentMode) {
+                messageInput.placeholder = "Type your message or use /cmd [command] for terminal access...";
+                currentModel = 'agent-mode';
+                document.getElementById('modelSelect').value = 'agent-mode';
+            } else {
+                messageInput.placeholder = "Type your message here...";
+            }
+            
+            updateFeaturePills();
+        }
+
+        function refreshTunnels() {
+            fetch('/api/tunnels')
+                .then(response => response.json())
+                .then(tunnels => updateTunnelsList(tunnels))
+                .catch(error => {
+                    console.error('Error fetching tunnels:', error);
+                    document.getElementById('tunnelsList').innerHTML = 
+                        '<div class="tunnel-url"><span class="status-indicator status-offline"></span><span>Error loading tunnels</span></div>';
+                });
+        }
+
+        function updateTunnelsList(tunnels) {
+            const tunnelsList = document.getElementById('tunnelsList');
+            tunnelsList.innerHTML = '';
+            
+            if (Object.keys(tunnels).length === 0) {
+                tunnelsList.innerHTML = '<div class="tunnel-url"><span class="status-indicator status-connecting"></span><span>Starting tunnels...</span></div>';
+                return;
+            }
+            
+            Object.entries(tunnels).forEach(([provider, url]) => {
+                const tunnelDiv = document.createElement('div');
+                tunnelDiv.className = 'tunnel-url';
+                tunnelDiv.innerHTML = `
+                    <span class="status-indicator status-online"></span>
+                    <a href="${url}" target="_blank">${provider}</a>
+                    <button class="btn btn-secondary btn-small" onclick="copyToClipboard('${url}')">📋</button>
+                `;
+                tunnelsList.appendChild(tunnelDiv);
+            });
+        }
+
+        function updateSingleTunnel(data) {
+            // Update individual tunnel in real-time
+            refreshTunnels();
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show temporary success message
+                const originalText = event.target.textContent;
+                event.target.textContent = '✅';
+                setTimeout(() => {
+                    event.target.textContent = originalText;
+                }, 1000);
+            });
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message || !isConnected) return;
+            
+            lastUserMessage = message;
+            displayMessage('user', message);
+            
+            const data = {
+                session_id: currentSessionId,
+                message: message,
+                model: document.getElementById('agentMode').checked ? 'agent-mode' : document.getElementById('modelSelect').value,
+                temperature: parseFloat(document.getElementById('temperature').value),
+                max_tokens: parseInt(document.getElementById('maxTokens').value),
+                thinking_mode: document.getElementById('thinkingMode').checked,
+                internet_access: document.getElementById('internetAccess').checked,
+                agent_mode: document.getElementById('agentMode').checked,
+                system_prompt: document.getElementById('systemPrompt').value
+            };
+            
+            socket.emit('send_message', data);
+            messageInput.value = '';
+            updateFeaturePills();
+        }
+
+        function displayMessage(role, content, metadata = {}) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            
+            let messageClass = `message ${role}`;
+            if (metadata.isCommandResult) messageClass += ' command-result';
+            if (metadata.model === 'agent-mode') messageClass += ' agent';
+            
+            messageDiv.className = messageClass;
+            
+            // Format content for code blocks and commands
+            let formattedContent = content;
+            if (metadata.isCommandResult) {
+                formattedContent = content; // Keep as-is for command results
+            } else {
+                // Convert markdown-style code blocks
+                formattedContent = content
+                    .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
+                    .replace(/`([^`]+)`/g, '<code>$1</code>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+            }
+            
+            let messageContent = formattedContent;
+            
+            // Add metadata badges for assistant messages
+            if (role === 'assistant' && !metadata.isError) {
+                let badges = '';
+                if (metadata.internetUsed) badges += '<span class="pill active">🌐 Internet Used</span> ';
+                if (metadata.learningsApplied > 0) badges += `<span class="pill active">🧠 ${metadata.learningsApplied} Learnings Applied</span> `;
+                if (metadata.model) badges += `<span class="pill">🤖 ${metadata.model}</span> `;
+                
+                if (badges) {
+                    messageContent = `<div style="margin-bottom: 0.5rem;">${badges}</div>${messageContent}`;
+                }
+            }
+            
+            messageDiv.innerHTML = messageContent;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function createNewSession() {
+            currentSessionId = generateSessionId();
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="message assistant">
+                    <strong>🆕 New Session Created</strong><br>
+                    Session ID: ${currentSessionId}<br>
+                    Ready for conversation!
+                </div>
+            `;
+            document.getElementById('sessionName').value = `Session ${new Date().toLocaleTimeString()}`;
+        }
+
+        function saveSession() {
+            // Implement session saving logic
+            alert('Session saved! (Feature in development)');
+        }
+
+        function clearMessages() {
+            if (confirm('Clear all messages in this session?')) {
+                document.getElementById('chatMessages').innerHTML = `
+                    <div class="message assistant">
+                        <strong>🗑️ Messages Cleared</strong><br>
+                        Session continues with empty history.
+                    </div>
+                `;
+            }
+        }
+
+        function provideFeedback() {
+            if (!lastAIResponse) {
+                alert('No recent AI response to provide feedback on.');
+                return;
+            }
+            
+            document.getElementById('feedbackSection').classList.add('show');
+            document.getElementById('aiMistake').value = lastAIResponse.slice(0, 200) + '...';
+        }
+
+        function submitFeedback() {
+            const aiMistake = document.getElementById('aiMistake').value.trim();
+            const userCorrection = document.getElementById('userCorrection').value.trim();
+            
+            if (!aiMistake || !userCorrection) {
+                alert('Please fill in both fields.');
+                return;
+            }
+            
+            const feedbackData = {
+                session_id: currentSessionId,
+                user_correction: userCorrection,
+                ai_mistake: aiMistake,
+                context: lastUserMessage,
+                model_used: currentModel
+            };
+            
+            fetch('/api/learning_feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(feedbackData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayMessage('assistant', '🧠 Thank you for the feedback! I\'ve recorded this learning for future improvement.', { isLearning: true });
+                    cancelFeedback();
+                } else {
+                    alert('Failed to record feedback. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting feedback:', error);
+                alert('Error submitting feedback.');
+            });
+        }
+
+        function cancelFeedback() {
+            document.getElementById('feedbackSection').classList.remove('show');
+            document.getElementById('aiMistake').value = '';
+            document.getElementById('userCorrection').value = '';
+        }
+
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

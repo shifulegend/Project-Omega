@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Learning Logs - Project Omega Enhanced</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            gap: 1rem;
+        }
+
+        .search-box {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .filter-select {
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .learning-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .learning-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #007bff;
+            transition: transform 0.3s;
+        }
+
+        .learning-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .learning-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .learning-id {
+            background: #e9ecef;
+            color: #495057;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .learning-model {
+            background: #007bff;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.875rem;
+        }
+
+        .learning-content {
+            margin-bottom: 1rem;
+        }
+
+        .learning-section {
+            margin-bottom: 0.75rem;
+        }
+
+        .learning-section h4 {
+            color: #333;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .learning-section p {
+            color: #555;
+            line-height: 1.5;
+            background: #f8f9fa;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin: 0;
+        }
+
+        .learning-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid #e9ecef;
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        .effectiveness-score {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .score-bar {
+            width: 60px;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dc3545, #ffc107, #28a745);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .applied-count {
+            background: #28a745;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-box {
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 AI Learning Logs</h1>
+            <p>Track how your AI is learning and improving from feedback</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>{{ logs|length }}</h3>
+                <p>Total Learnings</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ logs|selectattr('applied_count', 'gt', 0)|list|length }}</h3>
+                <p>Applied Learnings</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ logs|map(attribute='applied_count')|sum }}</h3>
+                <p>Total Applications</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ "%.1f"|format(logs|map(attribute='effectiveness_score')|average|default(0)) }}</h3>
+                <p>Avg Effectiveness</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search learnings..." onkeyup="filterLearnings()">
+            </div>
+            <select class="filter-select" id="modelFilter" onchange="filterLearnings()">
+                <option value="">All Models</option>
+                {% for log in logs %}
+                    {% set model = log.model_used %}
+                    {% if model not in used_models %}
+                        {% set _ = used_models.append(model) %}
+                        <option value="{{ model }}">{{ model }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            <a href="/" class="btn btn-primary">← Back to Chat</a>
+            <button class="btn btn-secondary" onclick="exportLearnings()">📊 Export Data</button>
+        </div>
+
+        <div class="learning-grid" id="learningGrid">
+            {% if logs %}
+                {% for log in logs %}
+                <div class="learning-card" data-model="{{ log.model_used }}" data-content="{{ (log.user_correction + ' ' + log.ai_mistake + ' ' + log.learning_summary)|lower }}">
+                    <div class="learning-header">
+                        <span class="learning-id">ID: {{ log.id }}</span>
+                        <span class="learning-model">{{ log.model_used }}</span>
+                    </div>
+                    
+                    <div class="learning-content">
+                        <div class="learning-section">
+                            <h4>Learning Summary</h4>
+                            <p>{{ log.learning_summary }}</p>
+                        </div>
+                        
+                        <div class="learning-section">
+                            <h4>AI Mistake</h4>
+                            <p>{{ log.ai_mistake[:200] }}{% if log.ai_mistake|length > 200 %}...{% endif %}</p>
+                        </div>
+                        
+                        <div class="learning-section">
+                            <h4>User Correction</h4>
+                            <p>{{ log.user_correction[:200] }}{% if log.user_correction|length > 200 %}...{% endif %}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="learning-meta">
+                        <div>
+                            <strong>Session:</strong> {{ log.session_id[:15] }}...
+                        </div>
+                        <div class="effectiveness-score">
+                            <span>Effectiveness:</span>
+                            <div class="score-bar">
+                                <div class="score-fill" style="width: {{ (log.effectiveness_score * 10)|round }}%"></div>
+                            </div>
+                            <span>{{ "%.1f"|format(log.effectiveness_score) }}</span>
+                        </div>
+                        <div>
+                            <span class="applied-count">Applied {{ log.applied_count }}x</span>
+                        </div>
+                        <div>
+                            <small>{{ log.created_at }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <h3>🎓 No Learnings Yet</h3>
+                    <p>Start providing feedback to your AI responses to build a learning database.</p>
+                    <p>Use the "📝 Provide Feedback" button in the chat interface when the AI makes mistakes.</p>
+                    <br>
+                    <a href="/" class="btn btn-primary">Go to Chat</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Initialize variables for filtering
+        let allLearnings = [];
+        let usedModels = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Store original learnings for filtering
+            allLearnings = Array.from(document.querySelectorAll('.learning-card'));
+            
+            // Extract unique models
+            const modelSet = new Set();
+            allLearnings.forEach(card => {
+                modelSet.add(card.dataset.model);
+            });
+            usedModels = Array.from(modelSet);
+        });
+
+        function filterLearnings() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const modelFilter = document.getElementById('modelFilter').value;
+            
+            allLearnings.forEach(card => {
+                const content = card.dataset.content;
+                const model = card.dataset.model;
+                
+                const matchesSearch = !searchTerm || content.includes(searchTerm);
+                const matchesModel = !modelFilter || model === modelFilter;
+                
+                if (matchesSearch && matchesModel) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Update stats after filtering
+            updateFilteredStats();
+        }
+
+        function updateFilteredStats() {
+            const visibleCards = Array.from(document.querySelectorAll('.learning-card')).filter(card => 
+                card.style.display !== 'none'
+            );
+            
+            // You could update stats here based on filtered results
+            console.log(`Showing ${visibleCards.length} of ${allLearnings.length} learnings`);
+        }
+
+        function exportLearnings() {
+            // Simple CSV export
+            const visibleCards = Array.from(document.querySelectorAll('.learning-card')).filter(card => 
+                card.style.display !== 'none'
+            );
+            
+            let csvContent = "ID,Model,Learning Summary,AI Mistake,User Correction,Applied Count,Effectiveness Score,Created At\n";
+            
+            visibleCards.forEach(card => {
+                const id = card.querySelector('.learning-id').textContent.replace('ID: ', '');
+                const model = card.querySelector('.learning-model').textContent;
+                const sections = card.querySelectorAll('.learning-section p');
+                const summary = sections[0].textContent.replace(/"/g, '""');
+                const mistake = sections[1].textContent.replace(/"/g, '""');
+                const correction = sections[2].textContent.replace(/"/g, '""');
+                const appliedCount = card.querySelector('.applied-count').textContent.match(/\d+/)[0];
+                const effectiveness = card.querySelector('.effectiveness-score span:last-child').textContent;
+                const date = card.querySelector('.learning-meta small').textContent;
+                
+                csvContent += `"${id}","${model}","${summary}","${mistake}","${correction}","${appliedCount}","${effectiveness}","${date}"\n`;
+            });
+            
+            // Download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `ai_learnings_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>
