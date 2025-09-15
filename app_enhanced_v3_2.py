@@ -247,13 +247,22 @@ class OllamaModelManager:
                 'description': 'Advanced reasoning model'
             },
             {
-                'id': 'codellama:13b-instruct', 
-                'name': 'CodeLlama 13B Instruct',
+                'id': 'phi3:mini',
+                'name': 'Phi-3 Mini',
+                'type': 'standard',
+                'supports_thinking': True,
+                'supports_internet': True,
+                'size_gb': 2.3,
+                'description': 'Compact high-performance model'
+            },
+            {
+                'id': 'qwen2:1.5b-instruct', 
+                'name': 'Qwen2 1.5B Instruct',
                 'type': 'standard',
                 'supports_thinking': False,
                 'supports_internet': True,
-                'size_gb': 7.3,
-                'description': 'Specialized for code generation'
+                'size_gb': 1.0,
+                'description': 'Ultra-fast lightweight model'
             }
         ]
 
@@ -604,8 +613,10 @@ class TunnelManager:
     
     @staticmethod
     def get_active_tunnels() -> List[Dict]:
-        """Get all active tunnel URLs"""
+        """Get all active tunnel URLs including currently running ones"""
         tunnels = []
+        
+        # Add tunnels from ACTIVE_TUNNELS dictionary
         for provider, url in ACTIVE_TUNNELS.items():
             if provider in TUNNEL_PROVIDERS:
                 tunnels.append({
@@ -614,6 +625,69 @@ class TunnelManager:
                     'url': url,
                     'priority': TUNNEL_PROVIDERS[provider]['priority']
                 })
+        
+        # Check for running serveo.net tunnel from log file
+        try:
+            with open('/tmp/serveo.log', 'r') as f:
+                content = f.read()
+                if 'serveo.net' in content:
+                    lines = content.split('\n')
+                    for line in lines:
+                        if 'https://' in line and 'serveo.net' in line:
+                            # Extract URL from line like "Forwarding HTTP traffic from https://xyz.serveo.net"
+                            import re
+                            url_match = re.search(r'https://[\w-]+\.serveo\.net', line)
+                            if url_match:
+                                serveo_url = url_match.group(0)
+                                # Check if already in tunnels
+                                if not any(t['url'] == serveo_url for t in tunnels):
+                                    tunnels.append({
+                                        'provider': 'serveo',
+                                        'name': 'Serveo.net (Active)',
+                                        'url': serveo_url,
+                                        'priority': 1
+                                    })
+                                break
+        except FileNotFoundError:
+            pass
+        
+        # Check for direct RunPod IP access
+        try:
+            import os
+            ip = os.environ.get('RUNPOD_PUBLIC_IP', '213.173.99.7')
+            # Check if port 5000 is accessible
+            try:
+                import socket
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(1)
+                result = sock.connect_ex((ip, 5000))
+                sock.close()
+                if result == 0:  # Port is open
+                    direct_url = f"http://{ip}:5000"
+                    if not any(t['url'] == direct_url for t in tunnels):
+                        tunnels.append({
+                            'provider': 'direct',
+                            'name': 'Direct RunPod Access',
+                            'url': direct_url,
+                            'priority': 5
+                        })
+            except:
+                pass
+        except:
+            pass
+        
+        # Check for localhost.run tunnel
+        try:
+            result = subprocess.run(['pgrep', '-f', 'localhost.run'], capture_output=True, text=True)
+            if result.returncode == 0:
+                tunnels.append({
+                    'provider': 'localhost_run',
+                    'name': 'LocalHost.run (Active)', 
+                    'url': 'Localhost.run tunnel active - check logs',
+                    'priority': 2
+                })
+        except:
+            pass
         
         return sorted(tunnels, key=lambda x: x['priority'])
 
