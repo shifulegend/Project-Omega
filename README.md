@@ -1,14 +1,21 @@
-# Project Omega Enhanced 🧠
+# Project Omega Enhanced v3.2.0 🧠
 
-Advanced AI Chat Interface with Session Management, System Prompts, and Real-time Status Tracking
+Advanced AI Chat Interface with Session Management, Perfect Chat Mode, and Real-time AI Model Integration
 
-![Project Omega Enhanced](https://img.shields.io/badge/Status-Enhanced-brightgreen) ![Flask](https://img.shields.io/badge/Flask-2.3.3-blue) ![SocketIO](https://img.shields.io/badge/SocketIO-5.3.6-orange)
+![Project Omega Enhanced](https://img.shields.io/badge/Status-v3.2.0-brightgreen) ![Flask](https://img.shields.io/badge/Flask-Latest-blue) ![SocketIO](https://img.shields.io/badge/SocketIO-Latest-orange) ![RunPod](https://img.shields.io/badge/RunPod-Ready-purple)
 
 ## 🚀 Features
 
-### ✅ **Fixed Issues**
-- **Model Selection Bug**: All 4 available models (Mistral 7B, CodeLlama 13B, WizardLM Uncensored 13B, Dolphin Mistral 7B) are now properly accessible
-- **Enhanced UI/UX**: Completely redesigned interface with better responsiveness and visual feedback
+### ✅ **Current Models (v3.2.0)**
+- **Mistral 7B Instruct** (4.1GB) - Fast and efficient general-purpose model
+- **Llama 3.2 3B Instruct** (2.0GB) - Advanced reasoning with thinking mode support
+- **Phi-3 Mini** (2.3GB) - Compact high-performance model with thinking support  
+- **Qwen2 1.5B Instruct** (1.0GB) - Ultra-fast lightweight model
+
+### ✅ **Perfect Chat Mode Implementation**
+- **Fixed Model Loading**: Proper timeout handling and error recovery
+- **Auto-save Sessions**: Intelligent session naming with timestamp tracking
+- **Default Settings**: Blank system prompt, all modes enabled by default
 
 ### 🆕 **New Features**
 
@@ -74,33 +81,69 @@ Advanced AI Chat Interface with Session Management, System Prompts, and Real-tim
 
 ## 🚀 Installation & Deployment
 
+### **Current Version**: v3.2.0 - Perfect Chat Mode Implementation
+
 ### **Prerequisites**
 - Python 3.8+
-- Ollama API running on port 11434
-- FastAPI service running on port 8000
-- Cloudflare tunnel for public access
+- Ollama running on port 11434 with models installed
+- Port 5000 available for web interface
 
-### **Quick Start**
+### **RunPod Deployment (Recommended)**
 
-1. **Clone the Repository**
+#### **Step 1: Clone Repository**
+```bash
+git clone https://github.com/MiniMaxAI/Project-Omega.git
+cd Project-Omega
+```
+
+#### **Step 2: Run Complete Setup**
+```bash
+chmod +x complete_setup.sh
+./complete_setup.sh
+```
+
+The setup script will:
+- ✅ Start Ollama service
+- ✅ Install all 4 required models (Mistral, Llama 3.2, Phi-3, Qwen2)
+- ✅ Install Python dependencies
+- ✅ Start the v3.2.0 application on port 5000
+
+#### **Step 3: Access Your Application**
+
+**Method 1: RunPod Proxy URL (Recommended)**
+```
+https://[YOUR-POD-ID]-5000.proxy.runpod.net
+```
+Replace `[YOUR-POD-ID]` with your actual pod ID from RunPod console.
+
+**Method 2: Direct Port Access**
+1. In RunPod console → Connect tab → Expose port 5000
+2. Access via: `http://[YOUR-RUNPOD-IP]:[EXTERNAL-PORT]`
+
+### **Manual Installation**
+
+1. **Install Dependencies**
    ```bash
-   git clone https://github.com/your-username/project-omega-enhanced.git
-   cd project-omega-enhanced
+   pip install -r requirements_v3_2.txt
    ```
 
-2. **Install Dependencies**
+2. **Start Ollama & Install Models**
    ```bash
-   pip install -r requirements.txt
+   nohup ollama serve > /tmp/ollama.log 2>&1 &
+   ollama pull mistral:7b-instruct
+   ollama pull llama3.2:3b-instruct
+   ollama pull phi3:mini
+   ollama pull qwen2:1.5b-instruct
    ```
 
 3. **Run the Application**
    ```bash
-   python app.py
+   python app_enhanced_v3_2.py
    ```
 
 4. **Access the Interface**
    - Local: `http://localhost:5000`
-   - Public: Via Cloudflare tunnel URL
+   - Production: Configure port forwarding for port 5000
 
 ### **Production Deployment**
 
@@ -141,11 +184,28 @@ The script will:
 
 ## 🔧 Configuration
 
-### **Environment Variables**
+### **Configuration**
 ```bash
+# Application Configuration
 OLLAMA_API_URL=http://localhost:11434
-FASTAPI_URL=http://localhost:8000
+PORT=5000
+HOST=0.0.0.0
+
+# Database Paths
 DATABASE_PATH=chat_sessions.db
+LEARNINGS_DATABASE_PATH=ai_learnings.db
+TUNNELS_DATABASE_PATH=tunnel_providers.db
+
+# Model Configuration
+MODEL_FETCH_TIMEOUT=5
+```
+
+### **Required Models (Auto-installed by complete_setup.sh)**
+```bash
+ollama pull mistral:7b-instruct      # 4.1GB - General purpose
+ollama pull llama3.2:3b-instruct     # 2.0GB - Advanced reasoning  
+ollama pull phi3:mini                # 2.3GB - High performance
+ollama pull qwen2:1.5b-instruct      # 1.0GB - Ultra-fast
 ```
 
 ### **Model Types**
@@ -156,40 +216,92 @@ DATABASE_PATH=chat_sessions.db
 
 ### **Project Structure**
 ```
-project-omega-enhanced/
-├── app.py                 # Main Flask application
+Project-Omega/
+├── app_enhanced_v3_2.py     # Main Flask application (v3.2.0)
+├── complete_setup.sh        # Automated setup script for RunPod
+├── test_suite.py           # Automated testing suite
+├── requirements_v3_2.txt   # Python dependencies (v3.2.0)
 ├── templates/
-│   └── index.html        # Enhanced frontend interface
-├── requirements.txt      # Python dependencies
-├── deploy.sh            # Production deployment script
-├── README.md           # This documentation
-└── chat_sessions.db    # SQLite database (auto-created)
+│   └── index.html          # Enhanced frontend interface
+├── chat_sessions.db        # SQLite database (auto-created)
+├── ai_learnings.db         # AI learning storage
+└── tunnel_providers.db     # Tunnel configuration storage
 ```
 
 ### **Key Components**
-- **Session Management**: SQLite-based persistence
+- **Session Management**: SQLite-based persistence with auto-naming
 - **Real-time Communication**: Flask-SocketIO WebSockets
-- **Model Configuration**: Centralized capability definitions
-- **Status Tracking**: Live indicators with metrics
+- **Model Configuration**: Dynamic model loading with fallback support
+- **Status Tracking**: Live indicators with thinking time metrics
+- **Perfect Chat Mode**: Enhanced UX with intelligent defaults
 
 ## 🐛 Troubleshooting
 
-### **Common Issues**
+### **Port 5000 Access Issues**
+If you can't access the application via exposed port 5000:
 
-**Model Selection Not Working**
-- ✅ **Fixed**: Updated frontend to properly load all available models
+1. **Check if app is running on correct port:**
+   ```bash
+   ps aux | grep app_enhanced_v3_2
+   netstat -tlnp | grep :5000
+   ```
 
-**Sessions Not Persisting**
-- Check database permissions: `chmod 664 chat_sessions.db`
-- Verify SQLite installation
+2. **Verify app binds to 0.0.0.0:5000 (not localhost):**
+   ```bash
+   grep -n "host=" app_enhanced_v3_2.py
+   # Should show: host='0.0.0.0', port=5000
+   ```
 
-**Real-time Features Not Working**
-- Ensure SocketIO connection is established
-- Check browser console for JavaScript errors
+3. **Use RunPod Proxy URL (most reliable):**
+   ```
+   https://[YOUR-POD-ID]-5000.proxy.runpod.net
+   ```
 
-**Deployment Issues**
-- Run deployment script with: `bash deploy.sh`
-- Check log file: `/var/log/omega-enhanced.log`
+4. **Restart application properly:**
+   ```bash
+   pkill -f app_enhanced_v3_2
+   python app_enhanced_v3_2.py
+   ```
+
+### **Model Loading Issues**
+**"Cannot connect to AI model" error:**
+- ✅ Check Ollama service: `ps aux | grep ollama`
+- ✅ Start if needed: `nohup ollama serve > /tmp/ollama.log 2>&1 &`
+- ✅ Verify models installed: `ollama list`
+- ✅ Install missing models: `ollama pull mistral:7b-instruct`
+
+**"Loading models..." stuck:**
+- ✅ Check Ollama API: `curl http://localhost:11434/api/tags`
+- ✅ Restart both services: `pkill -f ollama && pkill -f app_enhanced`
+- ✅ Wait 10 seconds, then run `./complete_setup.sh`
+
+### **RunPod Specific Issues**
+**SSH Connection Refused:**
+- Instance may have restarted - check RunPod console
+- Use Web Terminal as alternative
+- Verify pod is still running
+
+**Models Not Persisting:**
+- Models are stored in `/root/.ollama/`
+- Use persistent storage or re-run `./complete_setup.sh`
+
+### **General Debugging**
+```bash
+# Check all running processes
+ps aux | grep -E "(ollama|app_enhanced|python)"
+
+# View application logs
+tail -f /tmp/app.log
+
+# View Ollama logs  
+tail -f /tmp/ollama.log
+
+# Test model availability
+curl http://localhost:11434/api/tags
+
+# Test app health
+curl http://localhost:5000
+```
 
 ## 📊 Performance Metrics
 
@@ -204,14 +316,15 @@ project-omega-enhanced/
 
 ## 🔄 Updates & Versioning
 
-### **Current Version**: v2.0.0 Enhanced
-- ✅ All original features preserved
-- ✅ Model selection bug fixed
-- ✅ Session deletion implemented
-- ✅ Real-time status tracking added
-- ✅ System prompts integrated
-- ✅ Advanced AI settings available
-- ✅ High reasoning model support
+### **Current Version**: v3.2.0 - Perfect Chat Mode Implementation
+- ✅ Fixed model loading with proper timeout and error handling
+- ✅ Autosave sessions with auto-generated names
+- ✅ Default settings: blank system prompt, all modes enabled
+- ✅ Fixed learning logs route
+- ✅ Clear chat preserves learnings
+- ✅ Improved reliability and user experience
+- ✅ Enhanced RunPod deployment support
+- ✅ Port 5000 standardization
 
 ### **Upcoming Features**
 - 🔄 Message search and filtering
